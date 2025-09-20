@@ -1,1 +1,12 @@
-szafa_env
+venv/
+db.sqlite3
+../.idea/
+.idea
+.env
+**__pycache__/
+uploads/
+.coverage
+htmlcov/
+data/
+staticfiles/
+szafa_env/
