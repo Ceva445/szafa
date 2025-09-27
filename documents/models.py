@@ -1,3 +1,4 @@
+from datetime import date
 from django.db import models
 from core.models import Product, Supplier, Company
 from employees.models import Employee

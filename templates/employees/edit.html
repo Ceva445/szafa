@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Edytuj pracownika{% endblock %}
+{% block page_title %}Edytuj: {{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+{% block page_subtitle %}Edycja danych pracownika{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;">
+        <label>NR Karty</label><br>
+        <input type="text" name="card_number" value="{{ initial.card_number|default:'' }}">
+        {% if errors.card_number %}<div style="color:#b91c1c">{{ errors.card_number }}</div>{% endif %}
+      </div>
+      <div style="flex:1;">
+        <label>Imię</label><br>
+        <input type="text" name="first_name" value="{{ initial.first_name|default:'' }}">
+        {% if errors.first_name %}<div style="color:#b91c1c">{{ errors.first_name }}</div>{% endif %}
+      </div>
+      <div style="flex:1;">
+        <label>Nazwisko</label><br>
+        <input type="text" name="last_name" value="{{ initial.last_name|default:'' }}">
+        {% if errors.last_name %}<div style="color:#b91c1c">{{ errors.last_name }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <div>
+        <label>Stanowisko</label><br>
+        <select name="position">
+          <option value="">--</option>
+          {% for p in positions %}
+          <option value="{{ p.id }}" {% if initial.position|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Dział</label><br>
+        <select name="department">
+          <option value="">--</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}" {% if initial.department|stringformat:"s" == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Firma</label><br>
+        <select name="company">
+          <option value="">--</option>
+          {% for c in companies %}
+          <option value="{{ c.id }}" {% if initial.company|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <hr style="margin:12px 0;">
+
+    <h3>Okresy zatrudnienia</h3>
+    <div id="periods">
+      {% for p in periods %}
+      <div class="period-row" style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="date" name="start_date[]" value="{{ p.start_date }}">
+        <input type="date" name="end_date[]" value="{{ p.end_date }}">
+        <button type="button" class="btn ghost small" onclick="this.parentElement.remove()">Usuń</button>
+      </div>
+      {% endfor %}
+      {% if periods|length == 0 %}
+      <div class="period-row" style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="date" name="start_date[]" value="">
+        <input type="date" name="end_date[]" value="">
+        <button type="button" class="btn ghost small" onclick="this.parentElement.remove()">Usuń</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <button type="button" class="btn small" onclick="addPeriod()">Dodaj okres</button>
+
+    <div style="margin-top:12px;">
+      <button type="submit" class="btn primary">ZAPISZ</button>
+      <a href="{% url 'employees:detail' employee.id %}" class="btn ghost">Anuluj</a>
+    </div>
+
+    {% if errors.general %}
+      <div style="color:#b91c1c;margin-top:8px;">{{ errors.general }}</div>
+    {% endif %}
+  </form>
+</div>
+
+{% block scripts %}
+<script>
+function addPeriod(){
+  const wrap = document.createElement('div');
+  wrap.className = 'period-row';
+  wrap.style = 'display:flex;gap:8px;margin-bottom:8px;';
+  wrap.innerHTML = `
+    <input type="date" name="start_date[]" value="">
+    <input type="date" name="end_date[]" value="">
+    <button type="button" class="btn ghost small" onclick="this.parentElement.remove()">Usuń</button>
+  `;
+  document.getElementById('periods').appendChild(wrap);
+}
+</script>
+{% endblock %}
+{% endblock %}

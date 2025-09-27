@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Karta: {{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+{% block page_title %}Karta pracownika{% endblock %}
+{% block page_subtitle %}{{ employee.first_name }} {{ employee.last_name }} — {{ employee.position.name }} / {{ employee.department.name }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'employees:edit' employee.id %}" class="btn small">✏️ Edytuj</a>
+  <form method="post" action="{% url 'employees:delete' employee.id %}" style="display:inline;">
+    {% csrf_token %}
+    <button class="btn small" onclick="return confirm('Usunąć pracownika?')">🗑️</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <strong>NR karty:</strong> {{ employee.card_number }}<br>
+  <strong>Firma:</strong> {{ employee.company.name }} &nbsp; <strong>Aktywny:</strong> {{ employee.is_active|yesno:"Tak,Nie" }}
+  <hr>
+  <div style="display:flex;gap:12px;">
+    <div>
+      <strong>Okresy zatrudnienia:</strong>
+      <ul>
+        {% for p in employee.employment_periods.all|dictsortreversed:"start_date" %}
+        <li>{{ p.start_date }} — {{ p.end_date|default:"obecnie" }}</li>
+        {% empty %}
+        <li>Brak okresów</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+    <button class="btn small" onclick="showTab('active')">Asortyment na stanie</button>
+    <button class="btn small" onclick="showTab('used')">Asortyment zużyty</button>
+  </div>
+
+  <div id="tab-active">
+    <h4>Asortyment na stanie</h4>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Akcje</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in active_products %}
+        <tr>
+          <td>{{ it.product.code }}</td>
+          <td>{{ it.product.name }}</td>
+          <td>{{ it.size }}</td>
+          <td>{{ it.quantity }}</td>
+          <td>{{ it.document.date }}</td>
+          <td class="actions">
+            <!-- Edycja dokumentu -->
+            <a class="btn small" href="{% url 'documents:edit' it.document.id %}">✏️</a>
+            <!-- Zużyj produkt (przejście do used) -->
+            <form method="post" action="{% url 'documents:item_mark_used' it.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button class="btn small" onclick="return confirm('Oznaczyć jako zużyte?')">Zużyj</button>
+            </form>
+            <!-- Usuń pozycję -->
+            <form method="post" action="{% url 'documents:item_delete' it.id %}" style="display:inline;">
+              {% csrf_token %}
+              <button class="btn small" onclick="return confirm('Usunąć pozycję?')">🗑️</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">Brak aktywnych produktów</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div id="tab-used" style="display:none;">
+    <h4>Asortyment zużyty</h4>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in used_products %}
+        <tr>
+          <td>{{ it.product.code }}</td>
+          <td>{{ it.product.name }}</td>
+          <td>{{ it.size }}</td>
+          <td>{{ it.quantity }}</td>
+          <td>{{ it.document.date }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">Brak zużytych produktów</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+function showTab(name){
+  document.getElementById('tab-active').style.display = name === 'active' ? 'block' : 'none';
+  document.getElementById('tab-used').style.display = name === 'used' ? 'block' : 'none';
+}
+</script>
+{% endblock %}
+{% endblock %}

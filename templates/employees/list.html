@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Pracownicy{% endblock %}
+{% block page_title %}Pracownicy{% endblock %}
+{% block page_subtitle %}Lista pracowników, wyszukiwanie i filtry{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'employees:add' %}" class="btn primary small">DODAJ PRACOWNIKA</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="get" class="filter-row" action="">
+    <div>
+      <label>Firma</label><br>
+      <select name="company">
+        <option value="">Wszystkie</option>
+        {% for c in companies %}
+        <option value="{{ c.id }}" {% if request.GET.company == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label>Stanowisko</label><br>
+      <select name="position">
+        <option value="">Wszystkie</option>
+        {% for p in positions %}
+        <option value="{{ p.id }}" {% if request.GET.position == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="search">
+      <input type="text" name="q" placeholder="nr karty / imię / nazwisko" value="{{ request.GET.q }}">
+      <button type="submit" class="btn ghost small">🔍</button>
+    </div>
+    
+  </form>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>NR Karty</th>
+        <th>Imię</th>
+        <th>Nazwisko</th>
+        <th>Stanowisko</th>
+        <th>Dział</th>
+        <th>Firma</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      <tr>
+        <td>{{ emp.card_number }}</td>
+        <td>{{ emp.first_name }}</td>
+        <td>{{ emp.last_name }}</td>
+        <td>{{ emp.position.name }}</td>
+        <td>{{ emp.department.name }}</td>
+        <td>{{ emp.company.name }}</td>
+        <td class="actions">
+          <a href="{% url 'employees:detail' emp.id %}" class="btn small">📂</a>
+          <a href="{% url 'employees:edit' emp.id %}" class="btn small">✏️</a>
+          <form method="post" action="{% url 'employees:delete' emp.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button class="btn small" onclick="return confirm('Usunąć pracownika?')">🪣</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">Brak pracowników</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
