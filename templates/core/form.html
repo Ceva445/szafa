@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Form - {{ model_name|title }}{% endblock %}
+
+{% block page_title %}
+  {% if creating %}
+    Dodaj {{ model_name|title }}
+  {% else %}
+    Edytuj {{ model_name|title }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <table>
+      {{ form.as_table }}
+    </table>
+    <div style="margin-top:8px;">
+      <button type="submit" class="btn primary">Zapisz</button>
+      <a href="{{ cancel_url }}" class="btn ghost">Anuluj</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

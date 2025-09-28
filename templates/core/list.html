@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ model_name|title }} - OBSŁUGA SYSTEMU{% endblock %}
+{% block page_title %}OBSŁUGA SYSTEMU — {{ model_name|title }}{% endblock %}
+{% block active %}system{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ add_url }}" class="btn primary small">DODAJ {{ model_name|upper }}</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="filter-row">
+    <div class="search">
+      <input type="text" id="q" placeholder="Szukaj po nazwie/ kodzie..." oninput="filterTable()" />
+      <button class="btn ghost small" onclick="document.getElementById('q').value='';filterTable();">Wyczyść</button>
+    </div>
+  </div>
+
+  <table class="table" id="main-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nazwa / Kod</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for obj in objects %}
+      <tr>
+        <td>{{ obj.id }}</td>
+        <td>
+          {% if obj.code %}{{ obj.code }} - {% endif %}
+          {{ obj.name }}
+        </td>
+        <td class="actions">
+         <a href="{% url 'core:'|add:model_name|add:'_update' obj.id %}" class="btn small">✏️</a>
+        <a href="{% url 'core:'|add:model_name|add:'_delete' obj.id %}" class="btn small">🗑️</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">Brak pozycji.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function filterTable(){
+    const q = document.getElementById('q').value.toLowerCase();
+    const rows = document.querySelectorAll('#main-table tbody tr');
+    rows.forEach(r=>{
+      const txt = r.querySelector('td:nth-child(2)').textContent.toLowerCase();
+      r.style.display = txt.indexOf(q) !== -1 ? '' : 'none';
+    });
+  }
+</script>
+{% endblock %}
