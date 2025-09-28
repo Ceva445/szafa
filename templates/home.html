@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Strona główna{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="text-3xl font-bold mb-6">Witaj w systemie zarządzania magazynem i pracownikami</h1>
+    <p class="text-lg mb-4">
+        Wybierz jedną z opcji w menu po lewej stronie, aby rozpocząć pracę.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+        <a href="{% url 'employees:list' %}" class="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
+            <h2 class="text-xl font-semibold mb-2">👷 Pracownicy</h2>
+            <p>Zarządzaj danymi pracowników, stanowiskami i historią zatrudnienia.</p>
+        </a>
+
+        <a href="" class="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
+            <h2 class="text-xl font-semibold mb-2">📑 Dokumenty magazynowe</h2>
+            <p>Przeglądaj dokumenty DW (wydania) i PZ (przyjęcia zewnętrzne).</p>
+        </a>
+
+        <a href="" class="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
+            <h2 class="text-xl font-semibold mb-2">📦 Magazyn</h2>
+            <p>Podgląd aktualnych stanów magazynowych i historia ruchów towarów.</p>
+        </a>
+
+        <a href="" class="p-6 bg-white rounded-2xl shadow hover:shadow-lg transition">
+            <h2 class="text-xl font-semibold mb-2">📊 Raporty</h2>
+            <p>Generuj raporty zapotrzebowania, wydań i przyjęć.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Usuń{% endblock %}
+{% block page_title %}Usuń pozycję{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p>Czy na pewno chcesz usunąć: <strong>{{ object }}</strong> ?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn primary">Tak, usuń</button>
+    <a href="{{ list_url }}" class="btn ghost">Anuluj</a>
+  </form>
+</div>
+{% endblock %}
