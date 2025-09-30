@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.urls import reverse
 from django.contrib import messages
-from .models import Company, Department, Position, Supplier, Product
-from .forms import CompanyForm, DepartmentForm, PositionForm, SupplierForm, ProductForm
+from .models import Company, Department, Position, ProductCategory, Supplier, Product
+from .forms import CompanyForm, DepartmentForm, PositionForm, ProductCategoryForm, SupplierForm, ProductForm
 
 
 # --- reusable base classes ---
@@ -248,3 +248,29 @@ class ProductUpdateView(BaseUpdateView):
 class ProductDeleteView(BaseDeleteView):
     model = Product
     success_url_name = "core:product_list"
+
+
+# --- ProductCategory ---
+class ProductCategoryListView(BaseListView):
+    model = ProductCategory
+    active = "system"
+
+
+class ProductCategoryCreateView(BaseCreateView):
+    model = ProductCategory
+    form_class = ProductCategoryForm
+    success_url_name = "core:productcategory_list"
+    active = "system"
+
+
+class ProductCategoryUpdateView(BaseUpdateView):
+    model = ProductCategory
+    form_class = ProductCategoryForm
+    success_url_name = "core:productcategory_list"
+    active = "system"
+
+
+class ProductCategoryDeleteView(BaseDeleteView):
+    model = ProductCategory
+    success_url_name = "core:productcategory_list"
+    active = "system"
