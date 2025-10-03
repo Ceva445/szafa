@@ -1,6 +1,6 @@
 # core/forms.py
 from django import forms
-from .models import Company, Department, Position, Supplier, Product
+from .models import Company, Department, Position, ProductCategory, Supplier, Product
 
 
 class CompanyForm(forms.ModelForm):
@@ -39,3 +39,9 @@ class ProductForm(forms.ModelForm):
             "period_days",
             "description",
         ]
+
+
+class ProductCategoryForm(forms.ModelForm):
+    class Meta:
+        model = ProductCategory
+        fields = ["name", "type"]

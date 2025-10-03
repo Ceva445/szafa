@@ -113,7 +113,7 @@
 
       <div class="nav-section">
         <a href="{% url 'employees:list' %}" class="nav-link {% if active == 'employees' %}active{% endif %}">PRACOWNICY</a>
-        <a href="" class="nav-link {% if active == 'documents' %}active{% endif %}">DOKUMENTY MAGAZYNOWE</a>
+        <a href="{% url 'documents:list' %}" class="nav-link {% if active == 'documents' %}active{% endif %}">DOKUMENTY MAGAZYNOWE</a>
         <a href="" class="nav-link {% if active == 'warehouse' %}active{% endif %}">MAGAZYN</a>
         <a href="" class="nav-link {% if active == 'reports' %}active{% endif %}">RAPORTY</a>
 
@@ -130,6 +130,7 @@
             <a href="{% url 'core:position_list' %}">Position</a>
             <a href="{% url 'core:supplier_list' %}">Supplier</a>
             <a href="{% url 'core:product_list' %}">Product</a>
+            <a href="{% url 'core:productcategory_list' %}">Product Category</a>
           </div>
         </div>
       </div>

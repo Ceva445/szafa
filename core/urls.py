@@ -71,4 +71,17 @@ urlpatterns = [
         views.ProductDeleteView.as_view(),
         name="product_delete",
     ),
+    # ProductCategory
+    path("category/", views.ProductCategoryListView.as_view(), name="productcategory_list"),
+    path("category/add/", views.ProductCategoryCreateView.as_view(), name="productcategory_add"),
+    path(
+        "category/<int:pk>/edit/",
+        views.ProductCategoryUpdateView.as_view(),
+        name="productcategory_update",
+    ),
+    path(
+        "category/<int:pk>/delete/",
+        views.ProductCategoryDeleteView.as_view(),
+        name="productcategory_delete",
+    ),
 ]

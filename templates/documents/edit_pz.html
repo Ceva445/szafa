@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block page_title %}Edytuj PZ: {{ doc.document_number }}{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <label>Data wystawienia <input type="date" name="issue_date" value="{{ doc.issue_date }}"></label>
+    <label>Dostawca
+      <select name="supplier">
+        {% for s in suppliers %}
+        <option value="{{ s.id }}" {% if doc.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Odbiorca
+      <select name="recipient">
+        {% for c in companies %}
+        <option value="{{ c.id }}" {% if doc.recipient_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <div style="margin-top:8px;">
+      <button class="btn primary small">Zapisz</button>
+      <a class="btn small" href="{% url 'documents:detail' doc.id 'pz' %}">Anuluj</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Nowe DW{% endblock %}
+{% block page_title %}Nowe DW{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="filter-row">
+      <label>Pracownik
+        <select name="employee">
+          <option value="">-- wybierz --</option>
+          {% for e in employees %}
+          <option value="{{ e.id }}" {% if form.employee == e.id|stringformat:"s" %}selected{% endif %}>{{ e.last_name }} {{ e.first_name }} ({{ e.card_number }})</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Data wystawienia
+        <input type="date" name="issue_date" value="{{ form.issue_date|default:today }}">
+      </label>
+    </div>
+
+    <hr>
+    <h4>Pozycje</h4>
+    <div id="items">
+      <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+        <select name="product_id[]">
+          <option value="">-- produkt --</option>
+          {% for p in products %}
+          <option value="{{ p.id }}">{{ p.code }} — {{ p.name }}</option>
+          {% endfor %}
+        </select>
+        <input name="quantity[]" placeholder="Ilość" class="small" />
+        <input name="size[]" placeholder="Rozmiar" class="small" />
+        <input name="notes[]" placeholder="Uwagi" class="small" />
+        <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <button type="button" class="btn small" onclick="addRow()">Dodaj pozycję</button>
+      <button class="btn primary small">Zapisz DW</button>
+    </div>
+  </form>
+</div>
+
+{% block scripts %}
+<script>
+function addRow(){
+  const tpl = document.querySelector('.item-row').outerHTML;
+  const container = document.getElementById('items');
+  const div = document.createElement('div');
+  div.innerHTML = tpl;
+  // remove onclick attr from new remove buttons (they remain)
+  container.appendChild(div.firstElementChild);
+}
+function removeRow(btn){
+  const row = btn.closest('.item-row');
+  if(row) row.remove();
+}
+</script>
+{% endblock %}
+{% endblock %}

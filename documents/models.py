@@ -85,10 +85,11 @@ class DocumentItem(models.Model):
     ]
 
     document = models.ForeignKey(
-        "IssueDocument", on_delete=models.CASCADE, related_name="items"
+        IssueDocument, on_delete=models.CASCADE, related_name="items"
     )
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.IntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     size = models.CharField(max_length=20, blank=True, null=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=ITEM_STATUS, default="active")

@@ -40,7 +40,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Akcje</th>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th><th>Akcje</th>
         </tr>
       </thead>
       <tbody>
@@ -50,17 +50,20 @@
           <td>{{ it.product.name }}</td>
           <td>{{ it.size }}</td>
           <td>{{ it.quantity }}</td>
-          <td>{{ it.document.date }}</td>
+          <td>{{ it.document.issue_date }}</td>
+          <td>{{ it.next_issue_date|default:"-" }}</td>
           <td class="actions">
             <!-- Edycja dokumentu -->
-            <a class="btn small" href="{% url 'documents:edit' it.document.id %}">✏️</a>
-            <!-- Zużyj produkt (przejście do used) -->
+            <a href="{% url 'documents:edit' it.document.id 'dw' %}">✏️</a>
+
+            <!-- Zużyj produkt -->
             <form method="post" action="{% url 'documents:item_mark_used' it.id %}" style="display:inline;">
               {% csrf_token %}
               <button class="btn small" onclick="return confirm('Oznaczyć jako zużyte?')">Zużyj</button>
             </form>
+
             <!-- Usuń pozycję -->
-            <form method="post" action="{% url 'documents:item_delete' it.id %}" style="display:inline;">
+            <form method="post" action="{% url 'documents:item_delete' it.id 'dw' %}" style="display:inline;">
               {% csrf_token %}
               <button class="btn small" onclick="return confirm('Usunąć pozycję?')">🗑️</button>
             </form>
@@ -78,7 +81,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th>
         </tr>
       </thead>
       <tbody>
@@ -88,7 +91,8 @@
           <td>{{ it.product.name }}</td>
           <td>{{ it.size }}</td>
           <td>{{ it.quantity }}</td>
-          <td>{{ it.document.date }}</td>
+          <td>{{ it.document.issue_date }}</td>
+          <td>{{ it.next_issue_date|default:"-" }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="5">Brak zużytych produktów</td></tr>

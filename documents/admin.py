@@ -5,7 +5,7 @@ from .models import IssueDocument, ReceiptDocument, DocumentItem, ReceiptItem
 class DocumentItemInline(admin.TabularInline):
     model = DocumentItem
     extra = 1
-    fields = ["product", "quantity", "size", "notes", "status"]
+    fields = ["product", "quantity", "size", "unit_price", "notes", "status"]
     readonly_fields = ["next_issue_date"]
 
 
@@ -48,6 +48,7 @@ class DocumentItemAdmin(admin.ModelAdmin):
         "quantity",
         "size",
         "status",
+        "unit_price",
         "next_issue_date",
     ]
     list_filter = ["status", "product__category"]
