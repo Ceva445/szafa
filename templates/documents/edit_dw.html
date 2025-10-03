@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block page_title %}Edytuj DW: {{ doc.document_number }}{% endblock %}
+{% block content %}
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <label>Data wystawienia <input type="date" name="issue_date" value="{{ doc.issue_date }}"></label>
+    <label>Pracownik
+      <select name="employee">
+        {% for e in employees %}
+        <option value="{{ e.id }}" {% if doc.employee_id == e.id %}selected{% endif %}>{{ e }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div style="margin-top:8px;">
+      <button class="btn primary small">Zapisz</button>
+      <a class="btn small" href="{% url 'documents:detail' doc.id 'dw' %}">Anuluj</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
