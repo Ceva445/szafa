@@ -24,14 +24,19 @@
     <h4>Pozycje</h4>
     <div id="items">
       <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-        <select name="product_id[]">
+        <select name="product_id[]" class="product-select">
           <option value="">-- produkt --</option>
           {% for p in products %}
-          <option value="{{ p.id }}">{{ p.code }} — {{ p.name }}</option>
+          <option value="{{ p.id }}" 
+                  data-size="{{ p.size|default:'' }}" 
+                  data-price="{{ p.unit_price }}">
+            {{ p.code }} — {{ p.name }}
+          </option>
           {% endfor %}
         </select>
         <input name="quantity[]" placeholder="Ilość" class="small" />
-        <input name="size[]" placeholder="Rozmiar" class="small" />
+        <input name="size[]" placeholder="Rozmiar" class="small size-field" readonly />
+        <input name="unit_price[]" placeholder="Cena jedn." class="small price-field" readonly />
         <input name="notes[]" placeholder="Uwagi" class="small" />
         <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
       </div>
@@ -46,18 +51,77 @@
 
 {% block scripts %}
 <script>
+// Створюємо об'єкт для зберігання даних про продукти
+const productsData = {
+  {% for p in products %}
+  "{{ p.id }}": {
+    size: "{{ p.size|default:'' }}",
+    price: "{{ p.unit_price }}"
+  },
+  {% endfor %}
+};
+
 function addRow(){
-  const tpl = document.querySelector('.item-row').outerHTML;
   const container = document.getElementById('items');
-  const div = document.createElement('div');
-  div.innerHTML = tpl;
-  // remove onclick attr from new remove buttons (they remain)
-  container.appendChild(div.firstElementChild);
+  const newIndex = container.children.length;
+  
+  const newRow = document.createElement('div');
+  newRow.className = 'item-row';
+  newRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+  
+  newRow.innerHTML = `
+    <select name="product_id[]" class="product-select">
+      <option value="">-- produkt --</option>
+      {% for p in products %}
+      <option value="{{ p.id }}" 
+              data-size="{{ p.size|default:'' }}" 
+              data-price="{{ p.unit_price }}">
+        {{ p.code }} — {{ p.name }}
+      </option>
+      {% endfor %}
+    </select>
+    <input name="quantity[]" placeholder="Ilość" class="small" />
+    <input name="size[]" placeholder="Rozmiar" class="small size-field" readonly />
+    <input name="unit_price[]" placeholder="Cena jedn." class="small price-field" readonly />
+    <input name="notes[]" placeholder="Uwagi" class="small" />
+    <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
+  `;
+  
+  container.appendChild(newRow);
+  
+  // Додаємо обробник події для нового рядка
+  const productSelect = newRow.querySelector('.product-select');
+  productSelect.addEventListener('change', handleProductChange);
 }
+
 function removeRow(btn){
   const row = btn.closest('.item-row');
   if(row) row.remove();
 }
+
+function handleProductChange(event) {
+  const row = event.target.closest('.item-row');
+  const productId = event.target.value;
+  const sizeField = row.querySelector('.size-field');
+  const priceField = row.querySelector('.price-field');
+  
+  if (productId && productsData[productId]) {
+    const product = productsData[productId];
+    sizeField.value = product.size || '';
+    priceField.value = product.price || '';
+  } else {
+    sizeField.value = '';
+    priceField.value = '';
+  }
+}
+
+// Ініціалізація обробників подій для існуючих рядків
+document.addEventListener('DOMContentLoaded', function() {
+  const productSelects = document.querySelectorAll('.product-select');
+  productSelects.forEach(select => {
+    select.addEventListener('change', handleProductChange);
+  });
+});
 </script>
 {% endblock %}
 {% endblock %}
