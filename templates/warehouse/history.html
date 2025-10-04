@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Historia ruchów{% endblock %}
+{% block page_title %}Historia ruchów{% endblock %}
+{% block page_subtitle %}{{ product.code }} — {{ product.name }} {% if size %} / {{ size }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Typ</th>
+        <th>Ilość</th>
+        <th>Dokument</th>
+        <th>Notatki</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movements %}
+        <tr>
+          <td>{{ m.movement_date|date:"Y-m-d H:i" }}</td>
+          <td>{{ m.get_movement_type_display }}</td>
+          <td>{{ m.quantity }}</td>
+          <td>
+            {% if m.document_type and m.document_id %}
+              <a href="{% url 'documents:detail' m.document_id m.document_type|lower %}">
+                {{ m.document_type }} / {{ m.document_id }}
+              </a>
+            {% else %}
+              {{ m.document_type }}
+            {% endif %}
+          </td>
+          <td>{{ m.notes }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Brak ruchów</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:12px;">
+    {% if movements.has_previous %}
+      <a href="?page={{ movements.previous_page_number }}" class="btn small ghost">Poprzednia</a>
+    {% endif %}
+    <span style="margin:0 8px;">Strona {{ movements.number }} z {{ movements.paginator.num_pages }}</span>
+    {% if movements.has_next %}
+      <a href="?page={{ movements.next_page_number }}" class="btn small ghost">Następna</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

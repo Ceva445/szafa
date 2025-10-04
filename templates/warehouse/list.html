@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Magazyn — Stany{% endblock %}
+{% block page_title %}MAGAZYN{% endblock %}
+{% block page_subtitle %}Aktualny stan magazynu (produkty do wydania){% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="get" class="filter-row">
+    <div class="search">
+      <input type="text" name="q" placeholder="Szukaj: kod, nazwa, rozmiar" value="{{ q }}">
+      <button class="btn small ghost" type="submit">Szukaj</button>
+    </div>
+
+    <div style="margin-left:auto; display:flex; gap:8px;">
+      <a href="{% url 'documents:create_pz' %}" class="btn primary small">Nowa PZ</a>
+      {# Toggle show_zero via GET param #}
+      {% if show_zero %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}show_zero=0" class="btn small ghost">Ukryj stany zerowe</a>
+      {% else %}
+        <a href="?{% if q %}q={{ q }}&{% endif %}show_zero=1" class="btn small ghost">Pokaż stany zerowe</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Kod produktu</th>
+        <th>Opis produktu</th>
+        <th>Rozmiar</th>
+        <th>Ilość</th>
+        <th>Cena sztuki</th>
+        <th>Wartość</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in stocks %}
+        <tr>
+          <td>{{ s.product.code }}</td>
+          <td>{{ s.product.name }}</td>
+          <td>{{ s.size|default:"—" }}</td>
+          <td>{{ s.quantity }}</td>
+          <td>{{ s.product.unit_price }}</td>
+          <td>{{ s.total_value }}</td>
+          <td class="actions">
+            <a class="btn small ghost" href="{% url 'warehouse:detail' s.pk %}">Akcje</a>
+            <a class="btn small" href="{% url 'documents:create_pz' %}?product_id={{ s.product.pk }}&size={{ s.size|urlencode }}">Dodaj PZ</a>
+            <a class="btn small ghost" href="{% url 'warehouse:history' s.pk %}">Historia</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">Brak pozycji</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:12px;">
+    {% if stocks.has_previous %}
+      <a href="?page={{ stocks.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if show_zero %}&show_zero=1{% endif %}" class="btn small ghost">Poprzednia</a>
+    {% endif %}
+    <span style="margin:0 8px;">Strona {{ stocks.number }} z {{ stocks.paginator.num_pages }}</span>
+    {% if stocks.has_next %}
+      <a href="?page={{ stocks.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if show_zero %}&show_zero=1{% endif %}" class="btn small ghost">Następna</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

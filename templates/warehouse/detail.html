@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Magazyn — Szczegóły{% endblock %}
+{% block page_title %}Szczegóły pozycji{% endblock %}
+{% block page_subtitle %}{{ stock.product.code }} — {{ stock.product.name }}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <table class="table">
+    <tr><th>Kod produktu</th><td>{{ stock.product.code }}</td></tr>
+    <tr><th>Nazwa</th><td>{{ stock.product.name }}</td></tr>
+    <tr><th>Rozmiar</th><td>{{ stock.size|default:"—" }}</td></tr>
+    <tr><th>Ilość</th><td>{{ stock.quantity }}</td></tr>
+    <tr><th>Cena sztuki</th><td>{{ stock.product.unit_price }}</td></tr>
+    <tr><th>Wartość</th><td>{{ stock.total_value }}</td></tr>
+  </table>
+
+  <div style="margin-top:12px; display:flex; gap:8px;">
+    <a class="btn primary small" href="{% url 'documents:create_pz' %}?product_id={{ stock.product.pk }}&size={{ stock.size|urlencode }}">Dodaj PZ</a>
+    <a class="btn small ghost" href="{% url 'documents:list' %}?type=DW&product={{ stock.product.pk }}">Utwórz DW</a>
+    <a class="btn small ghost" href="{% url 'warehouse:history' stock.pk %}">Pokaż pełną historię</a>
+  </div>
+</div>
+
+<div class="card" style="margin-top:12px;">
+  <h3 style="margin-top:0;">Historia ruchów (ostatnie)</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Typ</th>
+        <th>Ilość</th>
+        <th>Dokument</th>
+        <th>Notatki</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movements %}
+        <tr>
+          <td>{{ m.movement_date|date:"Y-m-d H:i" }}</td>
+          <td>{{ m.get_movement_type_display }}</td>
+          <td>{{ m.quantity }}</td>
+          <td>
+            {% if m.document_type and m.document_id %}
+              <a href="{% url 'documents:detail' m.document_id m.document_type|lower %}">
+                {{ m.document_type }} / {{ m.document_id }}
+              </a>
+            {% else %}
+              {{ m.document_type }}
+            {% endif %}
+          </td>
+          <td>{{ m.notes|default:"" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Brak ruchów</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
