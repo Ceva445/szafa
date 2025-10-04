@@ -42,7 +42,8 @@
         <th>Nr dokumentu</th>
         <th>Typ</th>
         <th>Data</th>
-        <th>Powiązane</th>
+        <th>Odbiorca</th>
+        <th>Pracownik</th>
         <th>Pozycje</th>
         <th>Akcje</th>
       </tr>
@@ -54,6 +55,7 @@
           <td>{{ d.document_number }}</td>
           <td>DW</td>
           <td>{{ d.issue_date }}</td>
+          <td>{{ d.employee.company.name }}</td>
           <td>{{ d.employee.last_name }} {{ d.employee.first_name }}</td>
           <td>{{ d.items.count }}</td>
           <td class="actions">
