@@ -5,10 +5,11 @@ from django.urls import reverse
 from .models import WarehouseStock, StockMovement
 from core.models import Product
 from django.core.paginator import Paginator
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 DATE_FMT = "%Y-%m-%d"
 
-class WarehouseListView(View):
+class WarehouseListView(LoginRequiredMixin, View):
     """
     List current warehouse stocks.
     Supports:
@@ -46,7 +47,7 @@ class WarehouseListView(View):
         return render(request, "warehouse/list.html", context)
 
 
-class WarehouseDetailView(View):
+class WarehouseDetailView(LoginRequiredMixin, View):
     """
     Detail for a single WarehouseStock record.
     Shows product, size, current quantity, value and quick actions.
@@ -63,7 +64,7 @@ class WarehouseDetailView(View):
         return render(request, "warehouse/detail.html", context)
 
 
-class StockHistoryView(View):
+class StockHistoryView(LoginRequiredMixin, View):
     """
     Dedicated view to show paginated history for a product/size.
     Accepts GET params product_id and size; or pk of WarehouseStock.

@@ -9,6 +9,7 @@ from datetime import datetime, date
 from .models import IssueDocument, ReceiptDocument, DocumentItem, ReceiptItem
 from core.models import Product, Supplier, Company
 from employees.models import Employee
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 DATE_FMT = "%Y-%m-%d"
@@ -28,7 +29,7 @@ def parse_date_or_none(val):
 # =============== DETAIL VIEWS ========================
 # =====================================================
 
-class DWDetailView(View):
+class DWDetailView(LoginRequiredMixin, View):
     """Show details of DW (IssueDocument)"""
 
     def get(self, request, pk):
@@ -43,7 +44,7 @@ class DWDetailView(View):
         return render(request, "documents/detail_dw.html", context)
 
 
-class PZDetailView(View):
+class PZDetailView(LoginRequiredMixin, View):
     """Show details of PZ (ReceiptDocument)"""
 
     def get(self, request, pk):
@@ -62,7 +63,7 @@ class PZDetailView(View):
 # =============== CREATE VIEWS ========================
 # =====================================================
 
-class IssueCreateView(View):
+class IssueCreateView(LoginRequiredMixin, View):
     """Create a DW (IssueDocument) — wydanie dla pracownika"""
 
     def get(self, request):
@@ -151,7 +152,7 @@ class IssueCreateView(View):
         return redirect(reverse("documents:dw_detail", args=[doc.pk]))
 
 
-class ReceiptCreateView(View):
+class ReceiptCreateView(LoginRequiredMixin, View):
     """Create a PZ (ReceiptDocument) — przyjęcie zewnętrzne"""
 
     def get(self, request):
@@ -266,7 +267,7 @@ class ReceiptCreateView(View):
 # =============== EDIT VIEWS ==========================
 # =====================================================
 
-class DWEditView(View):
+class DWEditView(LoginRequiredMixin, View):
     """Edit DW document - basic info and items"""
 
     def get(self, request, pk):
@@ -419,7 +420,7 @@ class DWEditView(View):
         return redirect(reverse("documents:dw_detail", args=[doc.pk]))
 
 
-class PZEditView(View):
+class PZEditView(LoginRequiredMixin,View):
     """Edit PZ document - basic info and items"""
 
     def get(self, request, pk):
@@ -591,7 +592,7 @@ class PZEditView(View):
 # =============== ITEM VIEWS ==========================
 # =====================================================
 
-class ItemMarkUsedView(View):
+class ItemMarkUsedView(LoginRequiredMixin,View):
     """Mark a DocumentItem as used (DW only)"""
 
     def post(self, request, item_id):
@@ -601,7 +602,7 @@ class ItemMarkUsedView(View):
         return redirect(reverse("employees:detail", args=[it.document.employee_id]))
 
 
-class ItemDeleteView(View):
+class ItemDeleteView(LoginRequiredMixin,View):
     """Delete DW or PZ item"""
 
     def post(self, request, item_id, kind):
@@ -623,7 +624,7 @@ class ItemDeleteView(View):
 # =============== LIST VIEWS ==========================
 # =====================================================
 
-class DWListView(View):
+class DWListView(LoginRequiredMixin,View):
     """List DW (IssueDocument) documents"""
 
     def get(self, request):
@@ -658,7 +659,7 @@ class DWListView(View):
         return render(request, "documents/list_dw.html", context)
 
 
-class PZListView(View):
+class PZListView(LoginRequiredMixin,View):
     """List PZ (ReceiptDocument) documents"""
 
     def get(self, request):

@@ -6,6 +6,7 @@ from django.contrib import messages
 from datetime import datetime
 from .models import Employee, EmploymentPeriod
 from core.models import Company, Position, Department
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django.db.models import Q
 
@@ -22,7 +23,7 @@ def parse_date_or_none(val):
         return None
 
 
-class EmployeesListView(View):
+class EmployeesListView(LoginRequiredMixin, View):
     def get(self, request):
         q = request.GET.get("q", "").strip()
         company_id = request.GET.get("company")
@@ -55,7 +56,7 @@ class EmployeesListView(View):
         pass
 
 
-class AddEmployeeView(View):
+class AddEmployeeView(LoginRequiredMixin, View):
     def get(self, request):
         context = {
             "companies": Company.objects.all(),
@@ -148,7 +149,7 @@ class AddEmployeeView(View):
         return redirect(reverse("employees:list"))
 
 
-class EditEmployeeView(View):
+class EditEmployeeView(LoginRequiredMixin, View):
     def get(self, request, pk):
         emp = get_object_or_404(Employee, pk=pk)
         # prepare form initial
@@ -272,7 +273,7 @@ class EditEmployeeView(View):
         return redirect(reverse("employees:detail", args=[emp.pk]))
 
 
-class DeleteEmployeeView(View):
+class DeleteEmployeeView(LoginRequiredMixin,View):
     def post(self, request, pk):
         emp = get_object_or_404(Employee, pk=pk)
         emp.delete()
@@ -280,7 +281,7 @@ class DeleteEmployeeView(View):
         return redirect(reverse("employees:list"))
 
 
-class EmployeeDetailView(View):
+class EmployeeDetailView(LoginRequiredMixin, View):
     def get(self, request, pk):
         emp = get_object_or_404(Employee, pk=pk)
         # get "on stock" and "used" via model helper methods (you have these)

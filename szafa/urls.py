@@ -19,11 +19,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from szafa.view import HomeView as HomePageView
+from szafa.view import HomeView as HomePageView, UserLoginView, UserLogoutView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", HomePageView.as_view(), name="home"),
+    path("login/", UserLoginView.as_view(), name="login"),
+    path("logout/", UserLogoutView.as_view(), name="logout"),
     path("core/", include("core.urls")),
     path("employees/", include("employees.urls")),
     path("documents/", include("documents.urls")),
