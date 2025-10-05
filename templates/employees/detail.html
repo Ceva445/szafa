@@ -54,7 +54,7 @@
           <td>{{ it.next_issue_date|default:"-" }}</td>
           <td class="actions">
             <!-- Edycja dokumentu -->
-            <a href="{% url 'documents:edit' it.document.id 'dw' %}">✏️</a>
+            <a href="{% url 'documents:edit_dw' it.document.id %}">✏️</a>
 
             <!-- Zużyj produkt -->
             <form method="post" action="{% url 'documents:item_mark_used' it.id %}" style="display:inline;">

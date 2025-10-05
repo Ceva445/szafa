@@ -97,7 +97,8 @@
     .filter-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
     .btn { padding:8px 10px; border-radius:6px; border:0; cursor:pointer; }
     .btn.primary { background:#2563eb; color:#fff; }
-    .btn.ghost { background:transparent; border:1px solid #d1d5db; }
+    .btn.ghost { background:transparent; border:1px solid #d1d5db;}
+    .btn.ghost1 { background:transparent; border:1px solid #d1d5db; color: #fff;}
     .small { font-size: 13px; padding:6px 8px; }
     .search { display:flex; gap:6px; align-items:center; }
     input[type="text"], select, input[type="date"] { padding:8px; border-radius:6px; border:1px solid #d1d5db; }
@@ -113,7 +114,18 @@
 
       <div class="nav-section">
         <a href="{% url 'employees:list' %}" class="nav-link {% if active == 'employees' %}active{% endif %}">PRACOWNICY</a>
-        <a href="{% url 'documents:list' %}" class="nav-link {% if active == 'documents' %}active{% endif %}">DOKUMENTY MAGAZYNOWE</a>
+        <!-- DOKUMENTY MAGAZYNOWE з підменю -->
+        <div>
+          <div id="docs-toggle" class="nav-link {% if active == 'documents_dw' or active == 'documents_pz' %}active{% endif %}">
+            DOKUMENTY MAGAZYNOWE
+            <span class="toggle-icon" id="docs-toggle-icon">▸</span>
+          </div>
+
+          <div id="docs-submenu" class="submenu" aria-hidden="true">
+            <a href="{% url 'documents:dw_list' %}">DW – Wydania pracownikom</a>
+            <a href="{% url 'documents:pz_list' %}">PZ – Wydania na wydziały</a>
+          </div>
+        </div>
         <a href="{% url 'warehouse:list' %}" class="nav-link {% if active == 'warehouse' %}active{% endif %}">MAGAZYN</a>
         <a href="" class="nav-link {% if active == 'reports' %}active{% endif %}">RAPORTY</a>
 
@@ -138,6 +150,15 @@
       <div style="margin-top:auto; font-size:13px; color:#9ca3af;">
         Zalogowany jako:<br>
         <strong>{{ request.user.username|default:"Gość" }}</strong>
+        {% if request.user.is_authenticated %}
+          <form action="{% url 'logout' %}" method="post" style="margin-top:8px;">
+            {% csrf_token %}
+            <button type="submit" class="btn small ghost1" style="width:100%;">Wyloguj</button>
+          </form>
+        {% else %}
+        <br><br>
+          <a href="{% url 'login' %}" class="btn small primary" style="width:100%;">Zaloguj</a>
+        {% endif %}
       </div>
     </aside>
 
@@ -189,6 +210,42 @@
       });
 
       // якщо користувач клікнув на іншу головну навігацію — згорнути підменю
+      document.querySelectorAll('.nav-section > a.nav-link').forEach(a=>{
+        a.addEventListener('click', ()=> setOpen(false));
+      });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      const toggle = document.getElementById('docs-toggle');
+      const submenu = document.getElementById('docs-submenu');
+      const icon = document.getElementById('docs-toggle-icon');
+      const LS_KEY = 'docs_submenu_open_v1';
+
+      function setOpen(open){
+        if(open){
+          submenu.classList.add('open');
+          submenu.setAttribute('aria-hidden', 'false');
+          icon.textContent = '▾';
+        } else {
+          submenu.classList.remove('open');
+          submenu.setAttribute('aria-hidden', 'true');
+          icon.textContent = '▸';
+        }
+      }
+
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        setOpen(saved === '1');
+      } catch(e){ setOpen(false); }
+
+      toggle.addEventListener('click', function(){
+        const isOpen = submenu.classList.contains('open');
+        setOpen(!isOpen);
+        try { localStorage.setItem(LS_KEY, !isOpen ? '1' : '0'); } catch(e){}
+      });
+
       document.querySelectorAll('.nav-section > a.nav-link').forEach(a=>{
         a.addEventListener('click', ()=> setOpen(false));
       });

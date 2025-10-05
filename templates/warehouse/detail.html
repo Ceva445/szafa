@@ -16,7 +16,7 @@
 
   <div style="margin-top:12px; display:flex; gap:8px;">
     <a class="btn primary small" href="{% url 'documents:create_pz' %}?product_id={{ stock.product.pk }}&size={{ stock.size|urlencode }}">Dodaj PZ</a>
-    <a class="btn small ghost" href="{% url 'documents:list' %}?type=DW&product={{ stock.product.pk }}">Utwórz DW</a>
+    <a class="btn small ghost" href="{% url 'documents:dw_list' %}?product={{ stock.product.pk }}">Utwórz DW</a>
     <a class="btn small ghost" href="{% url 'warehouse:history' stock.pk %}">Pokaż pełną historię</a>
   </div>
 </div>
@@ -41,7 +41,7 @@
           <td>{{ m.quantity }}</td>
           <td>
             {% if m.document_type and m.document_id %}
-              <a href="{% url 'documents:detail' m.document_id m.document_type|lower %}">
+              <a href="{% url 'documents:dw_detail' m.document_id %}">
                 {{ m.document_type }} / {{ m.document_id }}
               </a>
             {% else %}

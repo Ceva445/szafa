@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Wydania na wydziały{% endblock %}
+{% block page_title %}Dokumenty DW{% endblock %}
+{% block page_subtitle %}Lista wydań dla pracowników{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'documents:create_dw' %}" class="btn small">➕ Nowe DW</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <form method="get" class="filter-row" style="align-items:center;">
+    <input type="text" name="q" placeholder="Szukaj (nr dokumentu / nazwisko / firma)" value="{{ q }}">
+    
+    <select name="company">
+      <option value="">Wszyscy odbiorcy</option>
+      {% for c in companies %}
+      <option value="{{ c.id }}" {% if company == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+
+    <button class="btn primary small">Szukaj</button>
+  </form>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nr dokumentu</th>
+        <th>Data</th>
+        <th>Odbiorca (Firma)</th>
+        <th>Pracownik</th>
+        <th>Pozycje</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in documents %}
+      <tr>
+        <td>{{ d.document_number }}</td>
+        <td>{{ d.issue_date }}</td>
+        <td>{{ d.employee.company.name }}</td>
+        <td>{{ d.employee.last_name }} {{ d.employee.first_name }}</td>
+        <td>{{ d.items.count }}</td>
+        <td>
+          <a class="btn small" href="{% url 'documents:dw_detail' d.id %}">Szczegóły</a>
+          <a class="btn small" href="{% url 'documents:edit_dw' d.id %}">✏️</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6">Brak DW</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

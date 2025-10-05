@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Szczegóły DW {{ doc.document_number }}{% endblock %}
+{% block page_title %}Dokument DW: {{ doc.document_number }}{% endblock %}
+{% block page_subtitle %}Wydanie dla {{ doc.employee }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'documents:dw_list' %}" class="btn small">← Powrót</a>
+  <a href="{% url 'documents:edit_dw' doc.id %}" class="btn small">✏️ Edytuj DW</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <strong>Nr:</strong> {{ doc.document_number }} &nbsp;
+  <strong>Data:</strong> {{ doc.issue_date }}<br>
+  <strong>Pracownik:</strong> {{ doc.employee }}<br>
+</div>
+
+<div class="card">
+  <h4>Pozycje</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Cena</th><th>Wartość</th><th>Uwagi</th><th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.product.code }}</td>
+        <td>{{ it.product.name }}</td>
+        <td>{{ it.size }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>{{ it.unit_price|default:"-" }}</td>
+        <td>{{ it.total_value|default:"-" }}</td>
+        <td>{{ it.notes|default:"" }}</td>
+        <td class="actions">
+          <form method="post" action="{% url 'documents:item_mark_used' it.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button class="btn small" onclick="return confirm('Oznaczyć jako zużyte?')">Zużyj</button>
+          </form>
+
+          <form method="post" action="{% url 'documents:item_delete' it.id 'dw' %}" style="display:inline;">
+            {% csrf_token %}
+            <button class="btn small" onclick="return confirm('Usunąć pozycję?')">🗑️</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">Brak pozycji</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

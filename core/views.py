@@ -4,10 +4,11 @@ from django.urls import reverse
 from django.contrib import messages
 from .models import Company, Department, Position, ProductCategory, Supplier, Product
 from .forms import CompanyForm, DepartmentForm, PositionForm, ProductCategoryForm, SupplierForm, ProductForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # --- reusable base classes ---
-class BaseListView(View):
+class BaseListView(LoginRequiredMixin, View):
     model = None
     template_name = "core/list.html"
     context_object_name = "objects"
@@ -30,7 +31,7 @@ class BaseListView(View):
         return render(request, self.template_name, ctx)
 
 
-class BaseCreateView(View):
+class BaseCreateView(LoginRequiredMixin,View):
     model = None
     form_class = None
     template_name = "core/form.html"
@@ -64,7 +65,7 @@ class BaseCreateView(View):
         return render(request, self.template_name, ctx)
 
 
-class BaseUpdateView(View):
+class BaseUpdateView(LoginRequiredMixin,View):
     model = None
     form_class = None
     template_name = "core/form.html"
@@ -105,7 +106,7 @@ class BaseUpdateView(View):
         return render(request, self.template_name, ctx)
 
 
-class BaseDeleteView(View):
+class BaseDeleteView(LoginRequiredMixin, View):
     model = None
     template_name = "core/confirm_delete.html"
     success_url_name = None
