@@ -4,16 +4,12 @@ from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
 from django.db.models import Q, Prefetch
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 
-from .models import (
-    IssueDocument,
-    ReceiptDocument,
-    DocumentItem,
-    ReceiptItem,
-)
+from .models import IssueDocument, ReceiptDocument, DocumentItem, ReceiptItem
 from core.models import Product, Supplier, Company
 from employees.models import Employee
+
 
 DATE_FMT = "%Y-%m-%d"
 
@@ -28,94 +24,43 @@ def parse_date_or_none(val):
         return None
 
 
-class DocumentsListView(View):
-    """
-    List documents (both PZ and DW). Supports:
-    - filter by type (DW/PZ/all)
-    - search by columns (document_number, employee last name for DW, supplier name for PZ)
-    - filter by company/recipient
-    """
+# =====================================================
+# =============== DETAIL VIEWS ========================
+# =====================================================
 
-    def get(self, request):
-        doc_type = request.GET.get("type", "")  # "DW", "PZ" or empty
-        q = request.GET.get("q", "").strip()
-        company_id = request.GET.get("company")
-        supplier_id = request.GET.get("supplier")
+class DWDetailView(View):
+    """Show details of DW (IssueDocument)"""
 
-        # Base querysets
-        dw_qs = IssueDocument.objects.select_related("employee").prefetch_related(
-            Prefetch("items", queryset=DocumentItem.objects.select_related("product"))
-        )
-        pz_qs = ReceiptDocument.objects.select_related(
-            "supplier", "recipient"
-        ).prefetch_related(
-            Prefetch("items", queryset=ReceiptItem.objects.select_related("product"))
-        )
-
-        if doc_type == "DW":
-            qs = dw_qs
-        elif doc_type == "PZ":
-            qs = pz_qs
-        else:
-            # combine into list for template convenience (sorted by date desc)
-            qs = list(dw_qs) + list(pz_qs)
-            qs = sorted(
-                qs,
-                key=lambda d: getattr(
-                    d, "issue_date", getattr(d, "issue_date", date.min)
-                ),
-                reverse=True,
-            )
-
-        # apply filters/search for homogeneous querysets (DW or PZ)
-        if doc_type == "DW" and q:
-            qs = qs.filter(
-                Q(document_number__icontains=q)
-                | Q(employee__last_name__icontains=q)
-                | Q(employee__first_name__icontains=q)
-            )
-        if doc_type == "PZ" and q:
-            qs = qs.filter(document_number__icontains=q)
-
-        if company_id:
-            # company/recipient filter for PZ recipients
-            qs = qs.filter(recipient_id=company_id) if doc_type == "PZ" else qs
-
-        if supplier_id:
-            qs = qs.filter(supplier_id=supplier_id) if doc_type == "PZ" else qs
-
-        context = {
-            "documents": qs,
-            "doc_type": doc_type,
-            "companies": Company.objects.all(),
-            "suppliers": Supplier.objects.all(),
-            "active": "documents",
-            "q": q,
-        }
-        return render(request, "documents/list.html", context)
-
-
-class DocumentDetailView(View):
-    """Show document detail (DW or PZ) with items and actions"""
-
-    def get(self, request, pk, kind):
-        # kind: 'dw' or 'pz'
-        if kind == "dw":
-            doc = get_object_or_404(IssueDocument, pk=pk)
-            items = doc.items.select_related("product").all()
-
-        else:
-            doc = get_object_or_404(ReceiptDocument, pk=pk)
-            items = doc.items.select_related("product").all()
-
+    def get(self, request, pk):
+        doc = get_object_or_404(IssueDocument, pk=pk)
+        items = doc.items.select_related("product").all()
         context = {
             "doc": doc,
             "items": items,
-            "kind": kind,
-            "active": "documents",
+            "active": "documents_dw",
+            "doc_type": "DW",
         }
-        return render(request, "documents/detail.html", context)
+        return render(request, "documents/detail_dw.html", context)
 
+
+class PZDetailView(View):
+    """Show details of PZ (ReceiptDocument)"""
+
+    def get(self, request, pk):
+        doc = get_object_or_404(ReceiptDocument, pk=pk)
+        items = doc.items.select_related("product").all()
+        context = {
+            "doc": doc,
+            "items": items,
+            "active": "documents_pz",
+            "doc_type": "PZ",
+        }
+        return render(request, "documents/detail_pz.html", context)
+
+
+# =====================================================
+# =============== CREATE VIEWS ========================
+# =====================================================
 
 class IssueCreateView(View):
     """Create a DW (IssueDocument) — wydanie dla pracownika"""
@@ -124,7 +69,7 @@ class IssueCreateView(View):
         context = {
             "employees": Employee.objects.select_related("position", "company").all(),
             "products": Product.objects.all(),
-            "active": "documents",
+            "active": "documents_dw",
             "today": date.today().isoformat(),
         }
         return render(request, "documents/create_dw.html", context)
@@ -132,7 +77,6 @@ class IssueCreateView(View):
     def post(self, request):
         employee_id = request.POST.get("employee")
         issue_date = parse_date_or_none(request.POST.get("issue_date"))
-        # items arrays
         product_ids = request.POST.getlist("product_id[]")
         quantities = request.POST.getlist("quantity[]")
         sizes = request.POST.getlist("size[]")
@@ -167,7 +111,7 @@ class IssueCreateView(View):
                 "products": Product.objects.all(),
                 "errors": errors,
                 "form": request.POST,
-                "active": "documents",
+                "active": "documents_dw",
                 "today": date.today().isoformat(),
             }
             return render(request, "documents/create_dw.html", context)
@@ -190,18 +134,21 @@ class IssueCreateView(View):
                     )
         except Exception as e:
             messages.error(request, f"Błąd zapisu: {e}")
-            context = {
-                "employees": Employee.objects.all(),
-                "products": Product.objects.all(),
-                "errors": {"general": str(e)},
-                "form": request.POST,
-                "active": "documents",
-                "today": date.today().isoformat(),
-            }
-            return render(request, "documents/create_dw.html", context)
+            return render(
+                request,
+                "documents/create_dw.html",
+                {
+                    "employees": Employee.objects.all(),
+                    "products": Product.objects.all(),
+                    "errors": {"general": str(e)},
+                    "form": request.POST,
+                    "active": "documents_dw",
+                    "today": date.today().isoformat(),
+                },
+            )
 
         messages.success(request, f"DW utworzone: {doc.document_number}")
-        return redirect(reverse("documents:detail", args=[doc.pk, "dw"]))
+        return redirect(reverse("documents:dw_detail", args=[doc.pk]))
 
 
 class ReceiptCreateView(View):
@@ -212,7 +159,7 @@ class ReceiptCreateView(View):
             "suppliers": Supplier.objects.all(),
             "companies": Company.objects.all(),
             "products": Product.objects.all(),
-            "active": "documents",
+            "active": "documents_pz",
             "today": date.today().isoformat(),
         }
         return render(request, "documents/create_pz.html", context)
@@ -221,7 +168,6 @@ class ReceiptCreateView(View):
         supplier_id = request.POST.get("supplier")
         recipient_id = request.POST.get("recipient")
         issue_date = parse_date_or_none(request.POST.get("issue_date"))
-
         product_ids = request.POST.getlist("product_id[]")
         quantities = request.POST.getlist("quantity[]")
         sizes = request.POST.getlist("size[]")
@@ -263,16 +209,19 @@ class ReceiptCreateView(View):
             errors["items"] = "Dodaj przynajmniej jedną pozycję"
 
         if errors:
-            context = {
-                "suppliers": Supplier.objects.all(),
-                "companies": Company.objects.all(),
-                "products": Product.objects.all(),
-                "errors": errors,
-                "form": request.POST,
-                "active": "documents",
-                "today": date.today().isoformat(),
-            }
-            return render(request, "documents/create_pz.html", context)
+            return render(
+                request,
+                "documents/create_pz.html",
+                {
+                    "suppliers": Supplier.objects.all(),
+                    "companies": Company.objects.all(),
+                    "products": Product.objects.all(),
+                    "errors": errors,
+                    "form": request.POST,
+                    "active": "documents_pz",
+                    "today": date.today().isoformat(),
+                },
+            )
 
         try:
             with transaction.atomic():
@@ -295,45 +244,53 @@ class ReceiptCreateView(View):
                     )
         except Exception as e:
             messages.error(request, f"Błąd zapisu: {e}")
-            context = {
-                "suppliers": Supplier.objects.all(),
-                "companies": Company.objects.all(),
-                "products": Product.objects.all(),
-                "errors": {"general": str(e)},
-                "form": request.POST,
-                "active": "documents",
-                "today": date.today().isoformat(),
-            }
-            return render(request, "documents/create_pz.html", context)
+            return render(
+                request,
+                "documents/create_pz.html",
+                {
+                    "suppliers": Supplier.objects.all(),
+                    "companies": Company.objects.all(),
+                    "products": Product.objects.all(),
+                    "errors": {"general": str(e)},
+                    "form": request.POST,
+                    "active": "documents_pz",
+                    "today": date.today().isoformat(),
+                },
+            )
 
         messages.success(request, f"PZ utworzone: {doc.document_number}")
-        return redirect(reverse("documents:detail", args=[doc.pk, "pz"]))
+        return redirect(reverse("documents:pz_detail", args=[doc.pk]))
 
+
+# =====================================================
+# =============== EDIT / ITEM VIEWS ===================
+# =====================================================
 
 class DocumentEditView(View):
-    """Simple edit for basic fields (does not attempt to edit items here)"""
+    """Edit DW or PZ (basic fields only)"""
 
     def get(self, request, pk, kind):
         if kind == "dw":
             doc = get_object_or_404(IssueDocument, pk=pk)
-            context = {
-                "doc": doc,
-                "employees": Employee.objects.all(),
-                "active": "documents",
-            }
-            return render(request, "documents/edit_dw.html", context)
+            return render(
+                request,
+                "documents/edit_dw.html",
+                {"doc": doc, "employees": Employee.objects.all(), "active": "documents_dw"},
+            )
         else:
             doc = get_object_or_404(ReceiptDocument, pk=pk)
-            context = {
-                "doc": doc,
-                "suppliers": Supplier.objects.all(),
-                "companies": Company.objects.all(),
-                "active": "documents",
-            }
-            return render(request, "documents/edit_pz.html", context)
+            return render(
+                request,
+                "documents/edit_pz.html",
+                {
+                    "doc": doc,
+                    "suppliers": Supplier.objects.all(),
+                    "companies": Company.objects.all(),
+                    "active": "documents_pz",
+                },
+            )
 
     def post(self, request, pk, kind):
-        # minimal editable fields (issue_date, linked fk)
         issue_date = parse_date_or_none(request.POST.get("issue_date"))
         if not issue_date:
             messages.error(request, "Niepoprawna data")
@@ -349,7 +306,7 @@ class DocumentEditView(View):
             doc.employee_id = emp_id
             doc.save()
             messages.success(request, "DW zaktualizowane")
-            return redirect(reverse("documents:detail", args=[doc.pk, "dw"]))
+            return redirect(reverse("documents:dw_detail", args=[doc.pk]))
         else:
             doc = get_object_or_404(ReceiptDocument, pk=pk)
             supplier_id = request.POST.get("supplier")
@@ -362,11 +319,11 @@ class DocumentEditView(View):
             doc.recipient_id = recipient_id
             doc.save()
             messages.success(request, "PZ zaktualizowane")
-            return redirect(reverse("documents:detail", args=[doc.pk, "pz"]))
+            return redirect(reverse("documents:pz_detail", args=[doc.pk]))
 
 
 class ItemMarkUsedView(View):
-    """Mark a DocumentItem as used (moves to used)"""
+    """Mark a DocumentItem as used (DW only)"""
 
     def post(self, request, item_id):
         it = get_object_or_404(DocumentItem, pk=item_id)
@@ -376,7 +333,7 @@ class ItemMarkUsedView(View):
 
 
 class ItemDeleteView(View):
-    """Delete any item (DocumentItem or ReceiptItem)"""
+    """Delete DW or PZ item"""
 
     def post(self, request, item_id, kind):
         if kind == "dw":
@@ -384,10 +341,88 @@ class ItemDeleteView(View):
             parent = it.document
             it.delete()
             messages.success(request, "Pozycja usunięta")
-            return redirect(reverse("documents:detail", args=[parent.pk, "dw"]))
+            return redirect(reverse("documents:dw_detail", args=[parent.pk]))
         else:
             it = get_object_or_404(ReceiptItem, pk=item_id)
             parent = it.document
             it.delete()
             messages.success(request, "Pozycja usunięta")
-            return redirect(reverse("documents:detail", args=[parent.pk, "pz"]))
+            return redirect(reverse("documents:pz_detail", args=[parent.pk]))
+
+
+# =====================================================
+# =============== LIST VIEWS ==========================
+# =====================================================
+
+class DWListView(View):
+    """List DW (IssueDocument) documents"""
+
+    def get(self, request):
+        q = request.GET.get("q", "").strip()
+        company_id = request.GET.get("company")
+
+        qs = IssueDocument.objects.select_related(
+            "employee", "employee__company"
+        ).prefetch_related(
+            Prefetch("items", queryset=DocumentItem.objects.select_related("product"))
+        )
+
+        if q:
+            qs = qs.filter(
+                Q(document_number__icontains=q)
+                | Q(employee__first_name__icontains=q)
+                | Q(employee__last_name__icontains=q)
+                | Q(employee__company__name__icontains=q)
+            )
+
+        if company_id:
+            qs = qs.filter(employee__company_id=company_id)
+
+        context = {
+            "documents": qs.order_by("-issue_date"),
+            "q": q,
+            "company": company_id,
+            "companies": Company.objects.all().order_by("name"),
+            "active": "documents_dw",
+            "doc_type": "DW",
+        }
+        return render(request, "documents/list_dw.html", context)
+
+
+class PZListView(View):
+    """List PZ (ReceiptDocument) documents"""
+
+    def get(self, request):
+        q = request.GET.get("q", "").strip()
+        supplier_id = request.GET.get("supplier")
+        recipient_id = request.GET.get("recipient")
+
+        qs = ReceiptDocument.objects.select_related(
+            "supplier", "recipient"
+        ).prefetch_related(
+            Prefetch("items", queryset=ReceiptItem.objects.select_related("product"))
+        )
+
+        if q:
+            qs = qs.filter(
+                Q(document_number__icontains=q)
+                | Q(supplier__name__icontains=q)
+                | Q(recipient__name__icontains=q)
+            )
+
+        if supplier_id:
+            qs = qs.filter(supplier_id=supplier_id)
+        if recipient_id:
+            qs = qs.filter(recipient_id=recipient_id)
+
+        context = {
+            "documents": qs.order_by("-issue_date"),
+            "q": q,
+            "supplier": supplier_id,
+            "recipient": recipient_id,
+            "suppliers": Supplier.objects.all().order_by("name"),
+            "recipients": Company.objects.all().order_by("name"),
+            "active": "documents_pz",
+            "doc_type": "PZ",
+        }
+        return render(request, "documents/list_pz.html", context)

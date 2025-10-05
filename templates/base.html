@@ -113,7 +113,18 @@
 
       <div class="nav-section">
         <a href="{% url 'employees:list' %}" class="nav-link {% if active == 'employees' %}active{% endif %}">PRACOWNICY</a>
-        <a href="{% url 'documents:list' %}" class="nav-link {% if active == 'documents' %}active{% endif %}">DOKUMENTY MAGAZYNOWE</a>
+        <!-- DOKUMENTY MAGAZYNOWE з підменю -->
+        <div>
+          <div id="docs-toggle" class="nav-link {% if active == 'documents_dw' or active == 'documents_pz' %}active{% endif %}">
+            DOKUMENTY MAGAZYNOWE
+            <span class="toggle-icon" id="docs-toggle-icon">▸</span>
+          </div>
+
+          <div id="docs-submenu" class="submenu" aria-hidden="true">
+            <a href="{% url 'documents:dw_list' %}">DW – Wydania pracownikom</a>
+            <a href="{% url 'documents:pz_list' %}">PZ – Wydania na wydziały</a>
+          </div>
+        </div>
         <a href="{% url 'warehouse:list' %}" class="nav-link {% if active == 'warehouse' %}active{% endif %}">MAGAZYN</a>
         <a href="" class="nav-link {% if active == 'reports' %}active{% endif %}">RAPORTY</a>
 
@@ -189,6 +200,42 @@
       });
 
       // якщо користувач клікнув на іншу головну навігацію — згорнути підменю
+      document.querySelectorAll('.nav-section > a.nav-link').forEach(a=>{
+        a.addEventListener('click', ()=> setOpen(false));
+      });
+    })();
+  </script>
+
+  <script>
+    (function(){
+      const toggle = document.getElementById('docs-toggle');
+      const submenu = document.getElementById('docs-submenu');
+      const icon = document.getElementById('docs-toggle-icon');
+      const LS_KEY = 'docs_submenu_open_v1';
+
+      function setOpen(open){
+        if(open){
+          submenu.classList.add('open');
+          submenu.setAttribute('aria-hidden', 'false');
+          icon.textContent = '▾';
+        } else {
+          submenu.classList.remove('open');
+          submenu.setAttribute('aria-hidden', 'true');
+          icon.textContent = '▸';
+        }
+      }
+
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        setOpen(saved === '1');
+      } catch(e){ setOpen(false); }
+
+      toggle.addEventListener('click', function(){
+        const isOpen = submenu.classList.contains('open');
+        setOpen(!isOpen);
+        try { localStorage.setItem(LS_KEY, !isOpen ? '1' : '0'); } catch(e){}
+      });
+
       document.querySelectorAll('.nav-section > a.nav-link').forEach(a=>{
         a.addEventListener('click', ()=> setOpen(false));
       });

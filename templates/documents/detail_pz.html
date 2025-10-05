@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Szczegóły PZ {{ doc.document_number }}{% endblock %}
+{% block page_title %}Dokument PZ: {{ doc.document_number }}{% endblock %}
+{% block page_subtitle %}Przyjęcie: {{ doc.supplier }} → {{ doc.recipient }}{% endblock %}
+{% block topbar_actions %}
+  <a href="{% url 'documents:pz_list' %}" class="btn small">← Powrót</a>
+  <a href="{% url 'documents:edit_pz' doc.id %}" class="btn small">✏️ Edytuj PZ</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <strong>Nr:</strong> {{ doc.document_number }} &nbsp;
+  <strong>Data:</strong> {{ doc.issue_date }}<br>
+  <strong>Dostawca:</strong> {{ doc.supplier }}<br>
+  <strong>Odbiorca:</strong> {{ doc.recipient }}
+</div>
+
+<div class="card">
+  <h4>Pozycje</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Cena</th><th>Wartość</th><th>Uwagi</th><th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.product.code }}</td>
+        <td>{{ it.product.name }}</td>
+        <td>{{ it.size }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>{{ it.unit_price|default:"-" }}</td>
+        <td>{{ it.total_value|default:"-" }}</td>
+        <td>{{ it.notes|default:"" }}</td>
+        <td class="actions">
+          <form method="post" action="{% url 'documents:item_delete' it.id 'pz' %}" style="display:inline;">
+            {% csrf_token %}
+            <button class="btn small" onclick="return confirm('Usunąć pozycję?')">🗑️</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">Brak pozycji</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
