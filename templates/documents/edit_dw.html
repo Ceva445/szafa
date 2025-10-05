@@ -4,18 +4,98 @@
 <div class="card">
   <form method="post">
     {% csrf_token %}
-    <label>Data wystawienia <input type="date" name="issue_date" value="{{ doc.issue_date }}"></label>
-    <label>Pracownik
-      <select name="employee">
-        {% for e in employees %}
-        <option value="{{ e.id }}" {% if doc.employee_id == e.id %}selected{% endif %}>{{ e }}</option>
+    
+    <h4>Podstawowe informacje</h4>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <label>
+        Data wystawienia
+        <input type="date" name="issue_date" value="{{ doc.issue_date|date:'Y-m-d' }}" required>
+      </label>
+      <label>
+        Pracownik
+        <select name="employee" required>
+          <option value="">Wybierz pracownika</option>
+          {% for e in employees %}
+          <option value="{{ e.id }}" {% if doc.employee_id == e.id %}selected{% endif %}>{{ e }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <h4 style="margin-top: 24px;">Istniejące pozycje</h4>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Produkt</th>
+          <th>Rozmiar</th>
+          <th>Ilość</th>
+          <th>Uwagi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>
+            {{ item.product.name }}
+            <input type="hidden" name="item_id[]" value="{{ item.id }}">
+          </td>
+          <td>
+            <input type="text" name="size[]" value="{{ item.size|default:'' }}" placeholder="Rozmiar">
+          </td>
+          <td>
+            <input type="number" name="quantity[]" value="{{ item.quantity }}" min="1" required style="width: 80px;">
+          </td>
+          <td>
+            <input type="text" name="notes[]" value="{{ item.notes|default:'' }}" placeholder="Uwagi">
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4">Brak pozycji</td>
+        </tr>
         {% endfor %}
-      </select>
-    </label>
-    <div style="margin-top:8px;">
-      <button class="btn primary small">Zapisz</button>
-      <a class="btn small" href="{% url 'documents:detail' doc.id 'dw' %}">Anuluj</a>
+      </tbody>
+    </table>
+
+    <h4 style="margin-top: 24px;">Nowe pozycje</h4>
+    <div id="new-items">
+      <div class="new-item" style="display: grid; grid-template-columns: 2fr 1fr 1fr 2fr; gap: 8px; margin-bottom: 8px;">
+        <select name="new_product_id[]">
+          <option value="">Wybierz produkt</option>
+          {% for product in products %}
+          <option value="{{ product.id }}">{{ product.name }} ({{ product.code }})</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="new_size[]" placeholder="Rozmiar">
+        <input type="number" name="new_quantity[]" value="1" min="1" placeholder="Ilość">
+        <input type="text" name="new_notes[]" placeholder="Uwagi">
+      </div>
+    </div>
+    <button type="button" class="btn small" onclick="addNewItem()">+ Dodaj kolejną pozycję</button>
+
+    <div style="margin-top: 24px; display: flex; gap: 8px;">
+      <button class="btn primary">Zapisz zmiany</button>
+      <a class="btn" href="{% url 'documents:dw_detail' doc.id %}">Anuluj</a>
     </div>
   </form>
 </div>
+
+<script>
+function addNewItem() {
+  const newItems = document.getElementById('new-items');
+  const newItem = newItems.querySelector('.new-item').cloneNode(true);
+  
+  // Clear values
+  newItem.querySelector('select').selectedIndex = 0;
+  newItem.querySelectorAll('input').forEach(input => {
+    if (input.type === 'number') {
+      input.value = '1';
+    } else {
+      input.value = '';
+    }
+  });
+  
+  newItems.appendChild(newItem);
+}
+</script>
 {% endblock %}

@@ -263,64 +263,333 @@ class ReceiptCreateView(View):
 
 
 # =====================================================
-# =============== EDIT / ITEM VIEWS ===================
+# =============== EDIT VIEWS ==========================
 # =====================================================
 
-class DocumentEditView(View):
-    """Edit DW or PZ (basic fields only)"""
+class DWEditView(View):
+    """Edit DW document - basic info and items"""
 
-    def get(self, request, pk, kind):
-        if kind == "dw":
-            doc = get_object_or_404(IssueDocument, pk=pk)
-            return render(
-                request,
-                "documents/edit_dw.html",
-                {"doc": doc, "employees": Employee.objects.all(), "active": "documents_dw"},
-            )
-        else:
-            doc = get_object_or_404(ReceiptDocument, pk=pk)
-            return render(
-                request,
-                "documents/edit_pz.html",
-                {
-                    "doc": doc,
-                    "suppliers": Supplier.objects.all(),
-                    "companies": Company.objects.all(),
-                    "active": "documents_pz",
-                },
-            )
+    def get(self, request, pk):
+        doc = get_object_or_404(IssueDocument, pk=pk)
+        items = doc.items.select_related("product").all()
+        context = {
+            "doc": doc,
+            "items": items,
+            "employees": Employee.objects.all(),
+            "products": Product.objects.all(),
+            "active": "documents_dw",
+            "today": date.today().isoformat(),
+        }
+        return render(request, "documents/edit_dw.html", context)
 
-    def post(self, request, pk, kind):
+    def post(self, request, pk):
+        doc = get_object_or_404(IssueDocument, pk=pk)
+        
+        # Basic document info
+        employee_id = request.POST.get("employee")
         issue_date = parse_date_or_none(request.POST.get("issue_date"))
+        
+        # Existing items
+        item_ids = request.POST.getlist("item_id[]")
+        quantities = request.POST.getlist("quantity[]")
+        sizes = request.POST.getlist("size[]")
+        notes = request.POST.getlist("notes[]")
+        
+        # New items
+        new_product_ids = request.POST.getlist("new_product_id[]")
+        new_quantities = request.POST.getlist("new_quantity[]")
+        new_sizes = request.POST.getlist("new_size[]")
+        new_notes = request.POST.getlist("new_notes[]")
+
+        errors = {}
+        if not employee_id:
+            errors["employee"] = "Wybierz pracownika"
         if not issue_date:
-            messages.error(request, "Niepoprawna data")
-            return redirect(request.path)
+            errors["issue_date"] = "Podaj datę wystawienia"
 
-        if kind == "dw":
-            doc = get_object_or_404(IssueDocument, pk=pk)
-            emp_id = request.POST.get("employee")
-            if not emp_id:
-                messages.error(request, "Wybierz pracownika")
-                return redirect(request.path)
-            doc.issue_date = issue_date
-            doc.employee_id = emp_id
-            doc.save()
-            messages.success(request, "DW zaktualizowane")
-            return redirect(reverse("documents:dw_detail", args=[doc.pk]))
-        else:
-            doc = get_object_or_404(ReceiptDocument, pk=pk)
-            supplier_id = request.POST.get("supplier")
-            recipient_id = request.POST.get("recipient")
-            if not supplier_id or not recipient_id:
-                messages.error(request, "Wybierz dostawcę i odbiorcę")
-                return redirect(request.path)
-            doc.issue_date = issue_date
-            doc.supplier_id = supplier_id
-            doc.recipient_id = recipient_id
-            doc.save()
-            messages.success(request, "PZ zaktualizowane")
-            return redirect(reverse("documents:pz_detail", args=[doc.pk]))
+        # Validate existing items
+        existing_items_data = []
+        for i, item_id in enumerate(item_ids):
+            if not item_id:
+                continue
+            try:
+                qty = int(quantities[i])
+                existing_items_data.append((int(item_id), qty, sizes[i], notes[i]))
+            except (ValueError, IndexError):
+                errors[f"quantity_{i}"] = "Niepoprawna ilość"
 
+        # Validate new items
+        new_items_data = []
+        for i, pid in enumerate(new_product_ids):
+            pid = pid.strip()
+            if not pid:
+                continue
+            try:
+                qty = int(new_quantities[i])
+                size = new_sizes[i] if i < len(new_sizes) else ""
+                note = new_notes[i] if i < len(new_notes) else ""
+                new_items_data.append((pid, qty, size, note))
+            except (ValueError, IndexError):
+                errors[f"new_quantity_{i}"] = "Niepoprawna ilość"
+
+        if errors:
+            items = doc.items.select_related("product").all()
+            context = {
+                "doc": doc,
+                "items": items,
+                "employees": Employee.objects.all(),
+                "products": Product.objects.all(),
+                "errors": errors,
+                "form": request.POST,
+                "active": "documents_dw",
+                "today": date.today().isoformat(),
+            }
+            return render(request, "documents/edit_dw.html", context)
+
+        try:
+            with transaction.atomic():
+                # Update basic document info
+                doc.issue_date = issue_date
+                doc.employee_id = employee_id
+                doc.save()
+
+                # Update existing items
+                for item_id, quantity, size, note in existing_items_data:
+                    item = DocumentItem.objects.get(id=item_id, document=doc)
+                    old_quantity = item.quantity
+                    
+                    # Update item
+                    item.quantity = quantity
+                    item.size = size or None
+                    item.notes = note
+                    item.save()
+                    
+                    # Update stock if quantity changed
+                    if old_quantity != quantity:
+                        from warehouse.models import WarehouseStock, StockMovement
+                        
+                        warehouse_stock, created = WarehouseStock.objects.get_or_create(
+                            product=item.product, 
+                            size=item.size, 
+                            defaults={"quantity": 0}
+                        )
+                        
+                        # Adjust stock based on difference
+                        quantity_diff = old_quantity - quantity
+                        warehouse_stock.update_stock(quantity_diff)
+                        
+                        # Record movement
+                        StockMovement.objects.create(
+                            product=item.product,
+                            size=item.size,
+                            movement_type="in" if quantity_diff > 0 else "out",
+                            quantity=abs(quantity_diff),
+                            document_type="DW_CORRECTION",
+                            document_id=doc.id,
+                            notes=f"Korekta DW: {doc.document_number}",
+                        )
+
+                # Add new items
+                for pid, qty, size, note in new_items_data:
+                    product = Product.objects.get(pk=pid)
+                    DocumentItem.objects.create(
+                        document=doc,
+                        product=product,
+                        quantity=qty,
+                        size=size or None,
+                        notes=note,
+                    )
+
+        except Exception as e:
+            messages.error(request, f"Błąd zapisu: {e}")
+            items = doc.items.select_related("product").all()
+            context = {
+                "doc": doc,
+                "items": items,
+                "employees": Employee.objects.all(),
+                "products": Product.objects.all(),
+                "errors": {"general": str(e)},
+                "form": request.POST,
+                "active": "documents_dw",
+                "today": date.today().isoformat(),
+            }
+            return render(request, "documents/edit_dw.html", context)
+
+        messages.success(request, f"DW zaktualizowane: {doc.document_number}")
+        return redirect(reverse("documents:dw_detail", args=[doc.pk]))
+
+
+class PZEditView(View):
+    """Edit PZ document - basic info and items"""
+
+    def get(self, request, pk):
+        doc = get_object_or_404(ReceiptDocument, pk=pk)
+        items = doc.items.select_related("product").all()
+        context = {
+            "doc": doc,
+            "items": items,
+            "suppliers": Supplier.objects.all(),
+            "companies": Company.objects.all(),
+            "products": Product.objects.all(),
+            "active": "documents_pz",
+            "today": date.today().isoformat(),
+        }
+        return render(request, "documents/edit_pz.html", context)
+
+    def post(self, request, pk):
+        doc = get_object_or_404(ReceiptDocument, pk=pk)
+        
+        # Basic document info
+        supplier_id = request.POST.get("supplier")
+        recipient_id = request.POST.get("recipient")
+        issue_date = parse_date_or_none(request.POST.get("issue_date"))
+        
+        # Existing items
+        item_ids = request.POST.getlist("item_id[]")
+        quantities = request.POST.getlist("quantity[]")
+        sizes = request.POST.getlist("size[]")
+        unit_prices = request.POST.getlist("unit_price[]")
+        notes = request.POST.getlist("notes[]")
+        
+        # New items
+        new_product_ids = request.POST.getlist("new_product_id[]")
+        new_quantities = request.POST.getlist("new_quantity[]")
+        new_sizes = request.POST.getlist("new_size[]")
+        new_unit_prices = request.POST.getlist("new_unit_price[]")
+        new_notes = request.POST.getlist("new_notes[]")
+
+        errors = {}
+        if not supplier_id:
+            errors["supplier"] = "Wybierz dostawcę"
+        if not recipient_id:
+            errors["recipient"] = "Wybierz odbiorcę"
+        if not issue_date:
+            errors["issue_date"] = "Podaj datę wystawienia"
+
+        # Validate existing items
+        existing_items_data = []
+        for i, item_id in enumerate(item_ids):
+            if not item_id:
+                continue
+            try:
+                qty = int(quantities[i])
+                up = float(unit_prices[i]) if i < len(unit_prices) and unit_prices[i].strip() else 0.0
+                existing_items_data.append((int(item_id), qty, sizes[i], up, notes[i]))
+            except (ValueError, IndexError):
+                errors[f"quantity_{i}"] = "Niepoprawna ilość lub cena"
+
+        # Validate new items
+        new_items_data = []
+        for i, pid in enumerate(new_product_ids):
+            pid = pid.strip()
+            if not pid:
+                continue
+            try:
+                qty = int(new_quantities[i])
+                up = float(new_unit_prices[i]) if i < len(new_unit_prices) and new_unit_prices[i].strip() else 0.0
+                size = new_sizes[i] if i < len(new_sizes) else ""
+                note = new_notes[i] if i < len(new_notes) else ""
+                new_items_data.append((pid, qty, size, up, note))
+            except (ValueError, IndexError):
+                errors[f"new_quantity_{i}"] = "Niepoprawna ilość lub cena"
+
+        if errors:
+            items = doc.items.select_related("product").all()
+            context = {
+                "doc": doc,
+                "items": items,
+                "suppliers": Supplier.objects.all(),
+                "companies": Company.objects.all(),
+                "products": Product.objects.all(),
+                "errors": errors,
+                "form": request.POST,
+                "active": "documents_pz",
+                "today": date.today().isoformat(),
+            }
+            return render(request, "documents/edit_pz.html", context)
+
+        try:
+            with transaction.atomic():
+                # Update basic document info
+                doc.issue_date = issue_date
+                doc.supplier_id = supplier_id
+                doc.recipient_id = recipient_id
+                doc.save()
+
+                # Update existing items
+                for item_id, quantity, size, unit_price, note in existing_items_data:
+                    item = ReceiptItem.objects.get(id=item_id, document=doc)
+                    old_quantity = item.quantity
+                    
+                    # Update item
+                    item.quantity = quantity
+                    item.size = size or None
+                    item.unit_price = unit_price
+                    item.total_value = quantity * unit_price
+                    item.notes = note
+                    item.save()
+                    
+                    # Update stock if quantity changed
+                    if old_quantity != quantity:
+                        from warehouse.models import WarehouseStock, StockMovement
+                        
+                        warehouse_stock, created = WarehouseStock.objects.get_or_create(
+                            product=item.product, 
+                            size=item.size, 
+                            defaults={"quantity": 0}
+                        )
+                        
+                        # Adjust stock based on difference
+                        quantity_diff = quantity - old_quantity
+                        warehouse_stock.update_stock(quantity_diff)
+                        
+                        # Record movement
+                        StockMovement.objects.create(
+                            product=item.product,
+                            size=item.size,
+                            movement_type="in" if quantity_diff > 0 else "out",
+                            quantity=abs(quantity_diff),
+                            document_type="PZ_CORRECTION",
+                            document_id=doc.id,
+                            notes=f"Korekta PZ: {doc.document_number}",
+                        )
+
+                # Add new items
+                for pid, qty, size, up, note in new_items_data:
+                    product = Product.objects.get(pk=pid)
+                    ReceiptItem.objects.create(
+                        document=doc,
+                        product=product,
+                        quantity=qty,
+                        size=size or None,
+                        unit_price=up,
+                        total_value=qty * up,
+                        notes=note,
+                    )
+
+        except Exception as e:
+            messages.error(request, f"Błąd zapisu: {e}")
+            items = doc.items.select_related("product").all()
+            context = {
+                "doc": doc,
+                "items": items,
+                "suppliers": Supplier.objects.all(),
+                "companies": Company.objects.all(),
+                "products": Product.objects.all(),
+                "errors": {"general": str(e)},
+                "form": request.POST,
+                "active": "documents_pz",
+                "today": date.today().isoformat(),
+            }
+            return render(request, "documents/edit_pz.html", context)
+
+        messages.success(request, f"PZ zaktualizowane: {doc.document_number}")
+        return redirect(reverse("documents:pz_detail", args=[doc.pk]))
+
+
+# =====================================================
+# =============== ITEM VIEWS ==========================
+# =====================================================
 
 class ItemMarkUsedView(View):
     """Mark a DocumentItem as used (DW only)"""
