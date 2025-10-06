@@ -60,11 +60,11 @@
         <td>{{ emp.department.name }}</td>
         <td>{{ emp.company.name }}</td>
         <td class="actions">
-          <a href="{% url 'employees:detail' emp.id %}" class="btn small">📂</a>
-          <a href="{% url 'employees:edit' emp.id %}" class="btn small">✏️</a>
+          <a href="{% url 'employees:detail' emp.id %}" class="btn small" title="Szczegóły pracownika">📂</a>
+          <a href="{% url 'employees:edit' emp.id %}" class="btn small" title="Edytuj pracownika">✏️</a>
           <form method="post" action="{% url 'employees:delete' emp.id %}" style="display:inline;">
             {% csrf_token %}
-            <button class="btn small" onclick="return confirm('Usunąć pracownika?')">🪣</button>
+            <button class="btn small" onclick="return confirm('Usunąć pracownika?')" title="Usuń pracownika">🪣</button>
           </form>
         </td>
       </tr>
