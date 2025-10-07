@@ -12,7 +12,7 @@
     </div>
 
     <div style="margin-left:auto; display:flex; gap:8px;">
-      <a href="{% url 'documents:create_pz' %}" class="btn primary small">Nowa PZ</a>
+      <!-- <a href="{% url 'documents:create_pz' %}" class="btn primary small">Nowa PZ</a> -->
       {# Toggle show_zero via GET param #}
       {% if show_zero %}
         <a href="?{% if q %}q={{ q }}&{% endif %}show_zero=0" class="btn small ghost">Ukryj stany zerowe</a>
@@ -47,7 +47,7 @@
           <td>{{ s.total_value }}</td>
           <td class="actions">
             <a class="btn small ghost" href="{% url 'warehouse:detail' s.pk %}">Akcje</a>
-            <a class="btn small" href="{% url 'documents:create_pz' %}?product_id={{ s.product.pk }}&size={{ s.size|urlencode }}">Dodaj PZ</a>
+            <!-- <a class="btn small" href="{% url 'documents:create_pz' %}?product_id={{ s.product.pk }}&size={{ s.size|urlencode }}">Dodaj PZ</a> -->
             <a class="btn small ghost" href="{% url 'warehouse:history' s.pk %}">Historia</a>
           </td>
         </tr>
