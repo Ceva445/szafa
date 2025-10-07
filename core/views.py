@@ -232,6 +232,7 @@ class SupplierDeleteView(BaseDeleteView):
 # --- Product ---
 class ProductListView(BaseListView):
     model = Product
+    template_name = "core/product_list.html"
 
 
 class ProductCreateView(BaseCreateView):
