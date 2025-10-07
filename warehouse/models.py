@@ -42,11 +42,14 @@ class StockMovement(models.Model):
     quantity = models.IntegerField()
     document_type = models.CharField(max_length=50)
     document_id = models.IntegerField()
+    document_number = models.CharField(max_length=50, blank=True)
     movement_date = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
 
     class Meta:
         ordering = ["-movement_date"]
 
+    def __str__(self):
+        return f"{self.get_movement_type_display()} - {self.product}"
     def __str__(self):
         return f"{self.get_movement_type_display()} - {self.product}"

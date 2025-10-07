@@ -91,6 +91,23 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       margin-bottom: 12px;
     }
+    .table th, .table td { 
+      text-align:left; 
+      padding:8px; 
+      border-bottom:1px solid #e5e5e5; 
+      white-space: nowrap; /* Zapobiega zawijaniu tekstu */
+    }
+
+    /* Dla tabel z wieloma kolumnami */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .btn.small {
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 0 2px;
+    }
     .table { width:100%; border-collapse: collapse; }
     .table th, .table td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb; }
     .actions button { margin-right:6px; }
@@ -123,7 +140,7 @@
 
           <div id="docs-submenu" class="submenu" aria-hidden="true">
             <a href="{% url 'documents:dw_list' %}">DW – Wydania pracownikom</a>
-            <a href="{% url 'documents:pz_list' %}">PZ – Wydania na wydziały</a>
+            <a href="{% url 'documents:pz_list' %}">PZ – Przyjęcia zewnętrzne</a>
           </div>
         </div>
         <a href="{% url 'warehouse:list' %}" class="nav-link {% if active == 'warehouse' %}active{% endif %}">MAGAZYN</a>

@@ -62,4 +62,5 @@ class Product(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        size_display = f" - {self.size}" if self.size else ""
+        return f"{self.code} - {self.name}{size_display}"

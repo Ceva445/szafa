@@ -29,7 +29,7 @@
         <td>{{ it.product.name }}</td>
         <td>{{ it.size }}</td>
         <td>{{ it.quantity }}</td>
-        <td>{{ it.unit_price|default:"-" }}</td>
+        <td>{{ it.product.unit_price|default:"-" }}</td>
         <td>{{ it.total_value|default:"-" }}</td>
         <td>{{ it.notes|default:"" }}</td>
         <td class="actions">

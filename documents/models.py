@@ -90,6 +90,7 @@ class DocumentItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.IntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    total_value = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, editable=False)
     size = models.CharField(max_length=20, blank=True, null=True)
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=10, choices=ITEM_STATUS, default="active")
@@ -106,6 +107,12 @@ class DocumentItem(models.Model):
         return f"{self.product} - {self.quantity} ({self.status})"
 
     def save(self, *args, **kwargs):
+        # Automatic calculation of total_value
+        if self.quantity is not None and self.unit_price is not None:
+            self.total_value = self.quantity * self.unit_price
+        else:
+            self.total_value = None
+
         # Automatic calculation of the next issue date
         if not self.next_issue_date and self.document.issue_date:
             from datetime import timedelta

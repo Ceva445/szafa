@@ -82,6 +82,7 @@ class IssueCreateView(LoginRequiredMixin, View):
         quantities = request.POST.getlist("quantity[]")
         sizes = request.POST.getlist("size[]")
         notes = request.POST.getlist("notes[]")
+        unit_prices = request.POST.getlist("unit_price[]")
 
         errors = {}
         if not employee_id:
@@ -101,7 +102,8 @@ class IssueCreateView(LoginRequiredMixin, View):
                 continue
             size = sizes[i].strip() if i < len(sizes) else ""
             note = notes[i].strip() if i < len(notes) else ""
-            items_parsed.append((pid, qty, size, note))
+            unit_price = unit_prices[i].strip() if i < len(unit_prices) else "0"
+            items_parsed.append((pid, qty, size, note, unit_price))
 
         if not items_parsed:
             errors["items"] = "Dodaj przynajmniej jedną pozycję"
@@ -124,7 +126,8 @@ class IssueCreateView(LoginRequiredMixin, View):
                     issue_date=issue_date,
                     employee_id=employee_id,
                 )
-                for pid, qty, size, note in items_parsed:
+                print("Parsed items:", items_parsed)
+                for pid, qty, size, note, unit_price in items_parsed:
                     product = Product.objects.get(pk=pid)
                     DocumentItem.objects.create(
                         document=doc,
@@ -132,9 +135,11 @@ class IssueCreateView(LoginRequiredMixin, View):
                         quantity=qty,
                         size=size or None,
                         notes=note,
+                        unit_price=float(unit_price) if unit_price else None,
                     )
         except Exception as e:
             messages.error(request, f"Błąd zapisu: {e}")
+            print("Error during DW creation:", e)
             return render(
                 request,
                 "documents/create_dw.html",

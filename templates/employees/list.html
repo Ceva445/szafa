@@ -42,8 +42,8 @@
     <thead>
       <tr>
         <th>NR Karty</th>
-        <th>Imię</th>
         <th>Nazwisko</th>
+        <th>Imię</th>
         <th>Stanowisko</th>
         <th>Dział</th>
         <th>Firma</th>
@@ -54,8 +54,8 @@
       {% for emp in employees %}
       <tr>
         <td>{{ emp.card_number }}</td>
+        <td>{{ emp.last_name }}</td>    
         <td>{{ emp.first_name }}</td>
-        <td>{{ emp.last_name }}</td>
         <td>{{ emp.position.name }}</td>
         <td>{{ emp.department.name }}</td>
         <td>{{ emp.company.name }}</td>
