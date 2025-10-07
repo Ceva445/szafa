@@ -25,11 +25,11 @@
             {% if m.document_type and m.document_id %}
               {% if m.document_type == "PZ" %}
                 <a href="{% url 'documents:pz_detail' m.document_id %}">
-                  {{ m.document_type }} / {{ m.document_id }}
+                  {{ m.document_number }}
                 </a>
               {% elif m.document_type == "DW" %}
                 <a href="{% url 'documents:dw_detail' m.document_id %}">
-                  {{ m.document_type }} / {{ m.document_id }}
+                  {{ m.document_number }}
                 </a>
               {% else %}
                 {{ m.document_type }} / {{ m.document_id }}

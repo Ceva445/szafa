@@ -1,7 +1,8 @@
+# warehouse/signals.py
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from documents.models import DocumentItem
+from documents.models import DocumentItem, ReceiptDocument, IssueDocument
 from warehouse.models import StockMovement, WarehouseStock
 
 
@@ -22,6 +23,7 @@ def update_stock_on_receipt(sender, instance, created, **kwargs):
             quantity=instance.quantity,
             document_type="PZ",
             document_id=instance.document.id,
+            document_number=instance.document.document_number,
             notes=f"External reception : {instance.document.document_number}",
         )
 
@@ -43,6 +45,7 @@ def update_stock_on_issue(sender, instance, created, **kwargs):
             quantity=instance.quantity,
             document_type="DW",
             document_id=instance.document.id,
+            document_number=instance.document.document_number,
             notes=f"Employee issuance: {instance.document.employee}",
         )
 
@@ -67,5 +70,6 @@ def update_stock_on_status_change(sender, instance, **kwargs):
                 quantity=instance.quantity,
                 document_type="RETURN",
                 document_id=instance.document.id,
+                document_number=instance.document.document_number,
                 notes=f"Return from employee: {instance.document.employee}",
             )
