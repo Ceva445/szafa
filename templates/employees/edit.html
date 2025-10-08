@@ -61,11 +61,11 @@
     <h3>Okresy zatrudnienia</h3>
     <div id="periods">
       {% for p in periods %}
-      <div class="period-row" style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="date" name="start_date[]" value="{{ p.start_date }}">
-        <input type="date" name="end_date[]" value="{{ p.end_date }}">
-        <button type="button" class="btn ghost small" onclick="this.parentElement.remove()">Usuń</button>
-      </div>
+        <div class="period-row" style="display:flex;gap:8px;margin-bottom:8px;">
+          <input type="date" name="start_date[]" value="{{ p.start_date|date:'Y-m-d' }}">
+          <input type="date" name="end_date[]" value="{{ p.end_date|date:'Y-m-d' }}">
+          <button type="button" class="btn ghost small" onclick="this.parentElement.remove()">Usuń</button>
+        </div>
       {% endfor %}
       {% if periods|length == 0 %}
       <div class="period-row" style="display:flex;gap:8px;margin-bottom:8px;">

@@ -161,7 +161,7 @@ class EditEmployeeView(LoginRequiredMixin, View):
             "department": emp.department_id,
             "company": emp.company_id,
         }
-        periods = list(emp.employment_periods.all().order_by("-start_date"))
+        periods = list(emp.employment_periods.all().order_by("start_date"))
         context = {
             "employee": emp,
             "companies": Company.objects.all(),
