@@ -72,6 +72,11 @@ class IssueCreateView(LoginRequiredMixin, View):
             "products": Product.objects.all(),
             "active": "documents_dw",
             "today": date.today().isoformat(),
+            "product_ids": [],
+            "quantities": [],
+            "sizes": [],
+            "notes": [],
+            "unit_prices": [],
         }
         return render(request, "documents/create_dw.html", context)
 
@@ -85,6 +90,9 @@ class IssueCreateView(LoginRequiredMixin, View):
         unit_prices = request.POST.getlist("unit_price[]")
 
         errors = {}
+        item_errors = []
+
+        # === Загальна валідація ===
         if not employee_id:
             errors["employee"] = "Wybierz pracownika"
         if not issue_date:
@@ -92,13 +100,23 @@ class IssueCreateView(LoginRequiredMixin, View):
 
         items_parsed = []
         for i, pid in enumerate(product_ids):
+            line_number = i + 1
             pid = pid.strip()
-            if not pid:
+            qty_raw = quantities[i].strip() if i < len(quantities) else ""
+
+            if not pid and not qty_raw:
                 continue
+
+            if not pid:
+                item_errors.append(f"W pozycji {line_number}: nie wybrano produktu.")
+                continue
+
             try:
-                qty = int(quantities[i])
+                qty = int(qty_raw)
+                if qty <= 0:
+                    raise ValueError
             except Exception:
-                errors[f"quantity_{i}"] = "Niepoprawna ilość"
+                item_errors.append(f"W pozycji {line_number}: niepoprawna ilość („{qty_raw}”).")
                 continue
             size = sizes[i].strip() if i < len(sizes) else ""
             note = notes[i].strip() if i < len(notes) else ""
@@ -106,7 +124,10 @@ class IssueCreateView(LoginRequiredMixin, View):
             items_parsed.append((pid, qty, size, note, unit_price))
 
         if not items_parsed:
-            errors["items"] = "Dodaj przynajmniej jedną pozycję"
+            errors["items"] = "Dodaj przynajmniej jedną poprawną pozycję"
+
+        if item_errors:
+            errors["item_errors"] = item_errors
 
         if errors:
             context = {
@@ -116,6 +137,11 @@ class IssueCreateView(LoginRequiredMixin, View):
                 "form": request.POST,
                 "active": "documents_dw",
                 "today": date.today().isoformat(),
+                "product_ids": product_ids,
+                "quantities": quantities,
+                "sizes": sizes,
+                "notes": notes,
+                "unit_prices": unit_prices,
             }
             return render(request, "documents/create_dw.html", context)
 
@@ -126,7 +152,6 @@ class IssueCreateView(LoginRequiredMixin, View):
                     issue_date=issue_date,
                     employee_id=employee_id,
                 )
-                print("Parsed items:", items_parsed)
                 for pid, qty, size, note, unit_price in items_parsed:
                     product = Product.objects.get(pk=pid)
                     DocumentItem.objects.create(
@@ -139,7 +164,6 @@ class IssueCreateView(LoginRequiredMixin, View):
                     )
         except Exception as e:
             messages.error(request, f"Błąd zapisu: {e}")
-            print("Error during DW creation:", e)
             return render(
                 request,
                 "documents/create_dw.html",
@@ -150,6 +174,11 @@ class IssueCreateView(LoginRequiredMixin, View):
                     "form": request.POST,
                     "active": "documents_dw",
                     "today": date.today().isoformat(),
+                    "product_ids": product_ids,
+                    "quantities": quantities,
+                    "sizes": sizes,
+                    "notes": notes,
+                    "unit_prices": unit_prices,
                 },
             )
 

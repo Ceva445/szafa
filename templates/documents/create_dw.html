@@ -7,39 +7,76 @@
     {% csrf_token %}
     <div class="filter-row">
       <label>Pracownik
-        <select name="employee">
+        <select name="employee" {% if errors.employee %}style="border-color: #ef4444;"{% endif %}>
           <option value="">-- wybierz --</option>
           {% for e in employees %}
-          <option value="{{ e.id }}" {% if form.employee == e.id|stringformat:"s" %}selected{% endif %}>{{ e.last_name }} {{ e.first_name }} ({{ e.card_number }})</option>
+          <option value="{{ e.id }}" {% if form.employee == e.id|stringformat:"s" %}selected{% endif %}>
+            {{ e.last_name }} {{ e.first_name }} ({{ e.card_number }})
+          </option>
           {% endfor %}
         </select>
+        {% if errors.employee %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ errors.employee }}</div>{% endif %}
       </label>
 
       <label>Data wystawienia
-        <input type="date" name="issue_date" value="{{ form.issue_date|default:today }}">
+        <input type="date" name="issue_date" value="{{ form.issue_date|default:today }}" {% if errors.issue_date %}style="border-color:#ef4444;"{% endif %}>
+        {% if errors.issue_date %}<div style="color:#ef4444;font-size:12px;margin-top:4px;">{{ errors.issue_date }}</div>{% endif %}
       </label>
     </div>
 
     <hr>
     <h4>Pozycje</h4>
+    {% if errors.items and not errors.item_errors %}
+      <div style="color:#ef4444;margin-bottom:6px;">{{ errors.items }}</div>
+    {% endif %}
+    {% if errors.item_errors %}
+      <ul style="color:#ef4444;margin-bottom:8px;font-size:13px;">
+        {% for err in errors.item_errors %}
+          <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
     <div id="items">
-      <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-        <select name="product_id[]" class="product-select">
-          <option value="">-- produkt --</option>
-          {% for p in products %}
-          <option value="{{ p.id }}" 
-                  data-size="{{ p.size|default:'' }}" 
-                  data-price="{{ p.unit_price }}">
-            {{ p.code }} — {{ p.name }}
-          </option>
-          {% endfor %}
-        </select>
-        <input name="quantity[]" placeholder="Ilość" class="small" />
-        <input name="size[]" placeholder="Rozmiar" class="small size-field" readonly />
-        <input name="unit_price[]" placeholder="Cena jedn." class="small price-field" readonly />
-        <input name="notes[]" placeholder="Uwagi" class="small" />
-        <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
-      </div>
+      {% if product_ids %}
+        {% for pid in product_ids %}
+          {% with forloop.counter0 as i %}
+            <div class="item-row" data-index="{{ i }}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+              <select name="product_id[]" class="product-select">
+                <option value="">-- produkt --</option>
+                {% for p in products %}
+                  <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}"
+                    {% if pid == p.id|stringformat:"s" %}selected{% endif %}>
+                    {{ p.code }} — {{ p.name }}
+                  </option>
+                {% endfor %}
+              </select>
+              <input name="quantity[]" placeholder="Ilość" class="small" value="{{ quantities.i }}" />
+              <input name="size[]" placeholder="Rozmiar" class="small size-field" readonly value="{{ sizes.i }}" />
+              <input name="unit_price[]" placeholder="Cena jedn." class="small price-field" readonly value="{{ unit_prices.i }}" />
+              <input name="notes[]" placeholder="Uwagi" class="small" value="{{ notes.i }}" />
+              <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      {% else %}
+        <!-- перше відкриття форми -->
+        <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+          <select name="product_id[]" class="product-select">
+            <option value="">-- produkt --</option>
+            {% for p in products %}
+              <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}">
+                {{ p.code }} — {{ p.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <input name="quantity[]" placeholder="Ilość" class="small" />
+          <input name="size[]" placeholder="Rozmiar" class="small size-field" readonly />
+          <input name="unit_price[]" placeholder="Cena jedn." class="small price-field" readonly />
+          <input name="notes[]" placeholder="Uwagi" class="small" />
+          <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
+        </div>
+      {% endif %}
     </div>
 
     <div style="margin-top:8px;">
@@ -51,31 +88,43 @@
 
 {% block scripts %}
 <script>
-// Створюємо об'єкт для зберігання даних про продукти
+/* productsData — мапа id -> {size, price} */
 const productsData = {
   {% for p in products %}
-  "{{ p.id }}": {
-    size: "{{ p.size|default:'' }}",
-    price: "{{ p.unit_price }}"
-  },
+  "{{ p.id }}": { size: "{{ p.size|default:'' }}", price: "{{ p.unit_price }}" }{% if not forloop.last %},{% endif %}
   {% endfor %}
 };
 
+/* Заповнює поля size/price у вказаному рядку, тільки якщо вони порожні
+   (щоб не перезаписувати ручні значення користувача) */
+function setRowFromProduct(row, productId) {
+  const sizeField = row.querySelector('.size-field');
+  const priceField = row.querySelector('.price-field');
+
+  if (productId && productsData[productId]) {
+    const p = productsData[productId];
+    if (!sizeField.value) sizeField.value = p.size || '';
+    if (!priceField.value) priceField.value = p.price || '';
+  } else {
+    // якщо ні — лишити поля порожніми
+    // (не обов'язково стирати, але можна)
+    // sizeField.value = '';
+    // priceField.value = '';
+  }
+}
+
 function addRow(){
   const container = document.getElementById('items');
-  const newIndex = container.children.length;
-  
+
   const newRow = document.createElement('div');
   newRow.className = 'item-row';
   newRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
-  
+
   newRow.innerHTML = `
     <select name="product_id[]" class="product-select">
       <option value="">-- produkt --</option>
       {% for p in products %}
-      <option value="{{ p.id }}" 
-              data-size="{{ p.size|default:'' }}" 
-              data-price="{{ p.unit_price }}">
+      <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}">
         {{ p.code }} — {{ p.name }}
       </option>
       {% endfor %}
@@ -86,12 +135,17 @@ function addRow(){
     <input name="notes[]" placeholder="Uwagi" class="small" />
     <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
   `;
-  
+
   container.appendChild(newRow);
-  
-  // Додаємо обробник події для нового рядка
+
+  // додаємо обробник для нової селект-опції
   const productSelect = newRow.querySelector('.product-select');
   productSelect.addEventListener('change', handleProductChange);
+
+  // якщо користувач якимось чином вже вибрав опцію (наприклад, клонування), заповнити поля
+  if (productSelect.value) {
+    setRowFromProduct(newRow, productSelect.value);
+  }
 }
 
 function removeRow(btn){
@@ -100,26 +154,24 @@ function removeRow(btn){
 }
 
 function handleProductChange(event) {
-  const row = event.target.closest('.item-row');
-  const productId = event.target.value;
-  const sizeField = row.querySelector('.size-field');
-  const priceField = row.querySelector('.price-field');
-  
-  if (productId && productsData[productId]) {
-    const product = productsData[productId];
-    sizeField.value = product.size || '';
-    priceField.value = product.price || '';
-  } else {
-    sizeField.value = '';
-    priceField.value = '';
-  }
+  const select = event.target;
+  const row = select.closest('.item-row');
+  // одразу встановлюємо поля з productsData (але не перезаписуємо, якщо вони вже мають значення)
+  setRowFromProduct(row, select.value);
 }
 
-// Ініціалізація обробників подій для існуючих рядків
+/* Ініціалізація при завантаженні сторінки:
+   - додаємо обробники на всі селекти
+   - і відразу заповнюємо size/price для тих, де вже вибрано товар */
 document.addEventListener('DOMContentLoaded', function() {
   const productSelects = document.querySelectorAll('.product-select');
   productSelects.forEach(select => {
     select.addEventListener('change', handleProductChange);
+    // заповнити для вже вибраних опцій (якщо значення пусте в полях)
+    if (select.value) {
+      const row = select.closest('.item-row');
+      setRowFromProduct(row, select.value);
+    }
   });
 });
 </script>
