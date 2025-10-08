@@ -72,37 +72,34 @@ class IssueCreateView(LoginRequiredMixin, View):
             "products": Product.objects.all(),
             "active": "documents_dw",
             "today": date.today().isoformat(),
-            "product_ids": [],
-            "quantities": [],
-            "sizes": [],
-            "notes": [],
-            "unit_prices": [],
+            "items": [],
         }
         return render(request, "documents/create_dw.html", context)
 
     def post(self, request):
         employee_id = request.POST.get("employee")
         issue_date = parse_date_or_none(request.POST.get("issue_date"))
+
         product_ids = request.POST.getlist("product_id[]")
         quantities = request.POST.getlist("quantity[]")
         sizes = request.POST.getlist("size[]")
-        notes = request.POST.getlist("notes[]")
         unit_prices = request.POST.getlist("unit_price[]")
+        notes = request.POST.getlist("notes[]")
+
+        items_parsed = list(zip(product_ids, quantities, sizes, unit_prices, notes))
 
         errors = {}
         item_errors = []
 
-        # === Загальна валідація ===
         if not employee_id:
             errors["employee"] = "Wybierz pracownika"
         if not issue_date:
             errors["issue_date"] = "Podaj datę wystawienia"
 
-        items_parsed = []
-        for i, pid in enumerate(product_ids):
+        for i, (pid, qty_raw, size, unit_price, note) in enumerate(items_parsed):
             line_number = i + 1
             pid = pid.strip()
-            qty_raw = quantities[i].strip() if i < len(quantities) else ""
+            qty_raw = qty_raw.strip()
 
             if not pid and not qty_raw:
                 continue
@@ -118,12 +115,10 @@ class IssueCreateView(LoginRequiredMixin, View):
             except Exception:
                 item_errors.append(f"W pozycji {line_number}: niepoprawna ilość („{qty_raw}”).")
                 continue
-            size = sizes[i].strip() if i < len(sizes) else ""
-            note = notes[i].strip() if i < len(notes) else ""
-            unit_price = unit_prices[i].strip() if i < len(unit_prices) else "0"
-            items_parsed.append((pid, qty, size, note, unit_price))
 
-        if not items_parsed:
+            items_parsed[i] = (pid, qty, size.strip(), unit_price.strip(), note.strip())
+
+        if not any(pid for pid, *_ in items_parsed):
             errors["items"] = "Dodaj przynajmniej jedną poprawną pozycję"
 
         if item_errors:
@@ -134,14 +129,9 @@ class IssueCreateView(LoginRequiredMixin, View):
                 "employees": Employee.objects.all(),
                 "products": Product.objects.all(),
                 "errors": errors,
-                "form": request.POST,
+                "items": items_parsed,
                 "active": "documents_dw",
                 "today": date.today().isoformat(),
-                "product_ids": product_ids,
-                "quantities": quantities,
-                "sizes": sizes,
-                "notes": notes,
-                "unit_prices": unit_prices,
             }
             return render(request, "documents/create_dw.html", context)
 
@@ -153,6 +143,8 @@ class IssueCreateView(LoginRequiredMixin, View):
                     employee_id=employee_id,
                 )
                 for pid, qty, size, note, unit_price in items_parsed:
+                    if not pid:
+                        continue
                     product = Product.objects.get(pk=pid)
                     DocumentItem.objects.create(
                         document=doc,
@@ -164,23 +156,15 @@ class IssueCreateView(LoginRequiredMixin, View):
                     )
         except Exception as e:
             messages.error(request, f"Błąd zapisu: {e}")
-            return render(
-                request,
-                "documents/create_dw.html",
-                {
-                    "employees": Employee.objects.all(),
-                    "products": Product.objects.all(),
-                    "errors": {"general": str(e)},
-                    "form": request.POST,
-                    "active": "documents_dw",
-                    "today": date.today().isoformat(),
-                    "product_ids": product_ids,
-                    "quantities": quantities,
-                    "sizes": sizes,
-                    "notes": notes,
-                    "unit_prices": unit_prices,
-                },
-            )
+            context = {
+                "employees": Employee.objects.all(),
+                "products": Product.objects.all(),
+                "errors": {"general": str(e)},
+                "items": items_parsed,
+                "active": "documents_dw",
+                "today": date.today().isoformat(),
+            }
+            return render(request, "documents/create_dw.html", context)
 
         messages.success(request, f"DW utworzone: {doc.document_number}")
         return redirect(reverse("documents:dw_detail", args=[doc.pk]))
