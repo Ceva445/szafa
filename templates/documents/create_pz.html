@@ -38,7 +38,7 @@
 
     <hr>
     <h4>Pozycje</h4>
-    {% if errors.items and not errors.item_errors %}
+    {% if errors.items and not errors.item_errors and not errors.employee and not errors.recipient and not errors.issue_date %}
       <div style="color:#ef4444;margin-bottom:6px;">{{ errors.items }}</div>
     {% endif %}
     {% if errors.item_errors %}
