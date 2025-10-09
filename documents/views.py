@@ -677,7 +677,7 @@ class DWListView(LoginRequiredMixin,View):
             qs = qs.filter(employee__company_id=company_id)
 
         context = {
-            "documents": qs.order_by("-issue_date"),
+            "documents": qs.order_by("-issue_date").order_by("-document_number"),
             "q": q,
             "company": company_id,
             "companies": Company.objects.all().order_by("name"),
@@ -714,7 +714,7 @@ class PZListView(LoginRequiredMixin,View):
             qs = qs.filter(recipient_id=recipient_id)
 
         context = {
-            "documents": qs.order_by("-issue_date"),
+            "documents": qs.order_by("-issue_date").order_by("-document_number"),
             "q": q,
             "supplier": supplier_id,
             "recipient": recipient_id,
