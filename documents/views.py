@@ -142,7 +142,7 @@ class IssueCreateView(LoginRequiredMixin, View):
                     issue_date=issue_date,
                     employee_id=employee_id,
                 )
-                for pid, qty, size, note, unit_price in items_parsed:
+                for pid, qty, size, unit_price, note in items_parsed:
                     if not pid:
                         continue
                     product = Product.objects.get(pk=pid)
