@@ -3,7 +3,14 @@ from django.views import View
 from django.urls import reverse
 from django.contrib import messages
 from .models import Company, Department, Position, ProductCategory, Supplier, Product
-from .forms import CompanyForm, DepartmentForm, PositionForm, ProductCategoryForm, SupplierForm, ProductForm
+from .forms import (
+    CompanyForm,
+    DepartmentForm,
+    PositionForm,
+    ProductCategoryForm,
+    SupplierForm,
+    ProductForm,
+)
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 
@@ -31,7 +38,7 @@ class BaseListView(LoginRequiredMixin, View):
         return render(request, self.template_name, ctx)
 
 
-class BaseCreateView(LoginRequiredMixin,View):
+class BaseCreateView(LoginRequiredMixin, View):
     model = None
     form_class = None
     template_name = "core/form.html"
@@ -53,7 +60,7 @@ class BaseCreateView(LoginRequiredMixin,View):
         form = self.form_class(request.POST)
         if form.is_valid():
             obj = form.save()
-            messages.success(request, f"{self.model.__name__} збережено.")
+            messages.success(request, f"{self.model.__name__} zapisano.")
             return redirect(reverse(self.success_url_name))
         ctx = {
             "form": form,
@@ -65,7 +72,7 @@ class BaseCreateView(LoginRequiredMixin,View):
         return render(request, self.template_name, ctx)
 
 
-class BaseUpdateView(LoginRequiredMixin,View):
+class BaseUpdateView(LoginRequiredMixin, View):
     model = None
     form_class = None
     template_name = "core/form.html"
@@ -93,7 +100,7 @@ class BaseUpdateView(LoginRequiredMixin,View):
         form = self.form_class(request.POST, instance=obj)
         if form.is_valid():
             form.save()
-            messages.success(request, f"{self.model.__name__} оновлено.")
+            messages.success(request, f"{self.model.__name__} zaktualizowano.")
             return redirect(reverse(self.success_url_name))
         ctx = {
             "form": form,
@@ -127,7 +134,7 @@ class BaseDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         obj = self.get_object(pk)
         obj.delete()
-        messages.success(request, f"{self.model.__name__} видалено.")
+        messages.success(request, f"{self.model.__name__} usunięto.")
         return redirect(reverse(self.success_url_name))
 
 
@@ -245,6 +252,45 @@ class ProductUpdateView(BaseUpdateView):
     model = Product
     form_class = ProductForm
     success_url_name = "core:product_list"
+
+
+class ProductDuplicateView(LoginRequiredMixin, View):
+    template_name = "core/form.html"
+    form_class = ProductForm
+    model = Product
+    active = "system"
+
+    def get(self, request, pk, *args, **kwargs):
+        original = get_object_or_404(Product, pk=pk)
+
+        form = self.form_class(instance=original)
+
+        form.initial["code"] = f"{original.code}_COPY"
+
+        ctx = {
+            "form": form,
+            "active": self.active,
+            "creating": True,
+            "model_name": self.model._meta.model_name,
+            "cancel_url": reverse(f"core:{self.model._meta.model_name}_list"),
+        }
+        return render(request, self.template_name, ctx)
+
+    def post(self, request, pk, *args, **kwargs):
+        form = self.form_class(request.POST)
+        if form.is_valid():
+            new_product = form.save()
+            messages.success(request, "Duplikat produktu został utworzony.")
+            return redirect(reverse("core:product_list"))
+
+        ctx = {
+            "form": form,
+            "active": self.active,
+            "creating": True,
+            "model_name": self.model._meta.model_name,
+            "cancel_url": reverse(f"core:{self.model._meta.model_name}_list"),
+        }
+        return render(request, self.template_name, ctx)
 
 
 class ProductDeleteView(BaseDeleteView):

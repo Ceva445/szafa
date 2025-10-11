@@ -42,6 +42,7 @@
         <td>{{ product.period_days }}</td>
         <td>{{ product.min_qty_on_stock }}</td>
         <td class="actions">
+          <a href="{% url 'core:product_duplicate' product.id %}" class="btn small">📄</a>
           <a href="{% url 'core:product_update' product.id %}" class="btn small">✏️</a>
           <a href="{% url 'core:product_delete' product.id %}" class="btn small">🗑️</a>
         </td>
