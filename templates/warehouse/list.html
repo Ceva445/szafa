@@ -33,6 +33,7 @@
         <th>Ilość</th>
         <th>Cena sztuki</th>
         <th>Wartość</th>
+        <th>Min. ilość na stanie</th>
         <th>Akcje</th>
       </tr>
     </thead>
@@ -45,6 +46,7 @@
           <td>{{ s.quantity }}</td>
           <td>{{ s.product.unit_price }}</td>
           <td>{{ s.total_value }}</td>
+          <td>{{ s.product.min_qty_on_stock }}</td>
           <td class="actions">
             <a class="btn small ghost" href="{% url 'warehouse:detail' s.pk %}">Akcje</a>
             <!-- <a class="btn small" href="{% url 'documents:create_pz' %}?product_id={{ s.product.pk }}&size={{ s.size|urlencode }}">Dodaj PZ</a> -->
