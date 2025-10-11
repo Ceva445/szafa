@@ -37,6 +37,7 @@ class ProductForm(forms.ModelForm):
             "size",
             "unit_price",
             "period_days",
+            "min_qty_on_stock",
             "description",
         ]
 
