@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Raporty - System Magazynowy{% endblock %}
+
+{% block page_title %}
+    {% if report_type == 'demand' %}Raport zapotrzebowania
+    {% elif report_type == 'issues' %}Raport wydań
+    {% elif report_type == 'receipts' %}Raport przyjęć
+    {% elif report_type == 'order_demand' %}Zapotrzebowanie na zamówienie
+    {% else %}Raporty
+    {% endif %}
+{% endblock %}
+
+{% block page_subtitle %}
+    {% if report_type == 'demand' %}Zapotrzebowanie na produkty w wybranym okresie
+    {% elif report_type == 'issues' %}Wydania produktów pracownikom w wybranym okresie
+    {% elif report_type == 'receipts' %}Przyjęcia zewnętrzne w wybranym okresie
+    {% elif report_type == 'order_demand' %}Ilość sztuk każdego asortymentu do zamówienia na podstawie wydań
+    {% else %}Generuj i przeglądaj raporty systemowe
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<form method="get" id="report_form">
+    <input type="hidden" name="report_type" value="{{ report_type }}">
+    
+    {% if report_type == 'demand' %}
+        {% include "reports/partials/demand_filters.html" %}
+        {% include "reports/partials/demand_results.html" %}
+    
+    {% elif report_type == 'issues' %}
+        {% include "reports/partials/issues_filters.html" %}
+        {% include "reports/partials/issues_results.html" %}
+    
+    {% elif report_type == 'receipts' %}
+        {% include "reports/partials/receipts_filters.html" %}
+        {% include "reports/partials/receipts_results.html" %}
+    
+    {% elif report_type == 'order_demand' %}
+        {% include "reports/partials/order_demand_filters.html" %}
+        {% include "reports/partials/order_demand_results.html" %}
+    
+    {% else %}
+        <div class="card">
+            <h3>Wybierz rodzaj raportu z menu po lewej stronie</h3>
+            <p>Dostępne raporty:</p>
+            <ul>
+                <li><strong>Raport zapotrzebowania</strong> - pokazuje dane ubrań poszczególnych pracowników, których daty kończą się w danym okresie</li>
+                <li><strong>Raport wydań</strong> - pokazuje dane wydanych ubrań poszczególnych pracowników w wybranym okresie</li>
+                <li><strong>Raport przyjęć</strong> - pokazuje dane przyjętych ubrań poszczególnych asortymentów w wybranym okresie</li>
+                <li><strong>Zapotrzebowanie na zamówienie</strong> - oblicza ilość sztuk każdego asortymentu do zamówienia na podstawie wydań na najbliższy miesiąc</li>
+            </ul>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}

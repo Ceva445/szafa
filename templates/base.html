@@ -120,9 +120,87 @@
     .search { display:flex; gap:6px; align-items:center; }
     input[type="text"], select, input[type="date"] { padding:8px; border-radius:6px; border:1px solid #d1d5db; }
     .subtitle { color:#6b7280; font-size:13px; margin-bottom:8px; }
+  /* Filter section styles added per user request */
+  .filter-section {
+    margin-bottom: 20px;
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .filter-group label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+  }
+
+  .filter-group select,
+  .filter-group input[type="date"],
+  .filter-group input[type="text"] {
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .filter-group select:focus,
+  .filter-group input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+
+  .period-info {
+    background: #f8fafc;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 4px solid #2563eb;
+  }
+
+  .period-info p {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  .period-info .subtitle {
+    color: #6b7280;
+    font-size: 13px;
+  }
   </style>
 
-  {% block head_extra %}{% endblock %}
+{% block head_extra %}{% endblock %}
 </head>
 <body>
   <div class="app">
@@ -144,7 +222,21 @@
           </div>
         </div>
         <a href="{% url 'warehouse:list' %}" class="nav-link {% if active == 'warehouse' %}active{% endif %}">MAGAZYN</a>
-        <a href="" class="nav-link {% if active == 'reports' %}active{% endif %}">RAPORTY</a>
+        
+        <!-- RAPORTY з підменю -->
+        <div>
+          <div id="reports-toggle" class="nav-link {% if active == 'reports' %}active{% endif %}">
+            RAPORTY
+            <span class="toggle-icon" id="reports-toggle-icon">▸</span>
+          </div>
+
+          <div id="reports-submenu" class="submenu" aria-hidden="true">
+            <a href="{% url 'reports:main' %}?report_type=demand">Raport zapotrzebowania</a>
+            <a href="{% url 'reports:main' %}?report_type=issues">Raport wydań</a>
+            <a href="{% url 'reports:main' %}?report_type=receipts">Raport przyjęć</a>
+            <a href="{% url 'reports:main' %}?report_type=order_demand">Zapotrzebowanie na zamówienie</a>
+          </div>
+        </div>
 
         <!-- OBSŁUGA SYSTEMU з підменю -->
         <div>
@@ -239,6 +331,43 @@
       const submenu = document.getElementById('docs-submenu');
       const icon = document.getElementById('docs-toggle-icon');
       const LS_KEY = 'docs_submenu_open_v1';
+
+      function setOpen(open){
+        if(open){
+          submenu.classList.add('open');
+          submenu.setAttribute('aria-hidden', 'false');
+          icon.textContent = '▾';
+        } else {
+          submenu.classList.remove('open');
+          submenu.setAttribute('aria-hidden', 'true');
+          icon.textContent = '▸';
+        }
+      }
+
+      try {
+        const saved = localStorage.getItem(LS_KEY);
+        setOpen(saved === '1');
+      } catch(e){ setOpen(false); }
+
+      toggle.addEventListener('click', function(){
+        const isOpen = submenu.classList.contains('open');
+        setOpen(!isOpen);
+        try { localStorage.setItem(LS_KEY, !isOpen ? '1' : '0'); } catch(e){}
+      });
+
+      document.querySelectorAll('.nav-section > a.nav-link').forEach(a=>{
+        a.addEventListener('click', ()=> setOpen(false));
+      });
+    })();
+  </script>
+
+  <script>
+    // Submenu toggle для RAPORTY
+    (function(){
+      const toggle = document.getElementById('reports-toggle');
+      const submenu = document.getElementById('reports-submenu');
+      const icon = document.getElementById('reports-toggle-icon');
+      const LS_KEY = 'reports_submenu_open_v1';
 
       function setOpen(open){
         if(open){

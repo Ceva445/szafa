@@ -1,0 +1,43 @@
+<div class="card">
+    <h3>Filtry raportu zapotrzebowania na zamówienie</h3>
+    
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label for="months_ahead">Okres prognozy</label>
+            <select name="months_ahead" id="months_ahead">
+                <option value="1" {% if filters.months_ahead == 1 %}selected{% endif %}>1 miesiąc</option>
+                <option value="2" {% if filters.months_ahead == 2 %}selected{% endif %}>2 miesiące</option>
+                <option value="3" {% if filters.months_ahead == 3 %}selected{% endif %}>3 miesiące</option>
+                <option value="6" {% if filters.months_ahead == 6 %}selected{% endif %}>6 miesięcy</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <div class="checkbox-group">
+                <input type="checkbox" name="show_zero_demand" id="show_zero_demand" value="true" 
+                    {% if filters.show_zero_demand %}checked{% endif %}>
+                <label for="show_zero_demand" style="font-weight: normal; margin: 0;">
+                    Pokaż produkty z zerowym zapotrzebowaniem
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="period-info">
+        <p><strong>Okres analizy:</strong> {{ filters.start_date|date:"Y-m-d" }} - {{ filters.end_date|date:"Y-m-d" }}</p>
+        <p class="subtitle">Raport oblicza ilość sztuk każdego asortymentu do zamówienia na podstawie wydań w wybranym okresie</p>
+    </div>
+    
+    <div class="filter-actions">
+        <button type="submit" class="btn primary">Generuj raport</button>
+        <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść filtry</button>
+    </div>
+</div>
+
+<script>
+function clearFilters() {
+    document.getElementById('months_ahead').value = '1';
+    document.getElementById('show_zero_demand').checked = false;
+    document.getElementById('report_form').submit();
+}
+</script>

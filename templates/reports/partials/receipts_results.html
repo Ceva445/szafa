@@ -1,0 +1,46 @@
+{% if receipt_items %}
+<div class="card">
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Dostawca</th>
+                    <th>Odbiorca</th>
+                    <th>Kod produktu</th>
+                    <th>Nazwa produktu</th>
+                    <th>Rozmiar</th>
+                    <th>Ilość</th>
+                    <th>Cena</th>
+                    <th>Wartość</th>
+                    <th>Data przyjęcia</th>
+                    <th>Nr dokumentu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in receipt_items %}
+                <tr>
+                    <td>{{ item.document.supplier.name }}</td>
+                    <td>{{ item.document.recipient.name }}</td>
+                    <td>{{ item.product.code }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.size|default:"-" }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price }}</td>
+                    <td>{{ item.total_value }}</td>
+                    <td>{{ item.document.issue_date|date:"Y-m-d" }}</td>
+                    <td>{{ item.document.document_number }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 16px; text-align: center;">
+        <p>Znaleziono {{ receipt_items.count }} rekordów</p>
+    </div>
+</div>
+{% elif request.GET %}
+<div class="card">
+    <p>Brak danych spełniających kryteria wyszukiwania.</p>
+</div>
+{% endif %}
