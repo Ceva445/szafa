@@ -1,0 +1,79 @@
+<div class="card">
+    <h3>Filtry raportu zapotrzebowania</h3>
+    
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label for="company">Odbiorca</label>
+            <select name="company" id="company">
+                <option value="">Wszyscy</option>
+                {% for company in companies %}
+                    <option value="{{ company.id }}" 
+                        {% if filters.company == company.id|stringformat:"i" %}selected{% endif %}>
+                        {{ company.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="department">Dział</label>
+            <select name="department" id="department">
+                <option value="">WSZYSCY</option>
+                {% for department in departments %}
+                    <option value="{{ department.id }}" 
+                        {% if filters.department == department.id|stringformat:"i" %}selected{% endif %}>
+                        {{ department.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="date_from">Data od</label>
+            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}">
+        </div>
+        
+        <div class="filter-group">
+            <label for="date_to">Data do</label>
+            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}">
+        </div>
+        
+        <div class="filter-group">
+            <label for="sort_by">Sposób sortowania</label>
+            <select name="sort_by" id="sort_by">
+                <option value="employee_end_date" {% if filters.sort_by == 'employee_end_date' %}selected{% endif %}>
+                    id pracownika + data zakończenia
+                </option>
+                <option value="end_date_employee" {% if filters.sort_by == 'end_date_employee' %}selected{% endif %}>
+                    data zakończenia + id pracownika
+                </option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="output">Forma wyświetlania</label>
+            <select name="output" id="output">
+                <option value="screen" {% if filters.output == 'screen' %}selected{% endif %}>Na Ekran</option>
+                <option value="xls" {% if filters.output == 'xls' %}selected{% endif %}>XLS</option>
+                <option value="pdf" {% if filters.output == 'pdf' %}selected{% endif %}>PDF</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="filter-actions">
+        <button type="submit" class="btn primary">Generuj raport</button>
+        <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść filtry</button>
+    </div>
+</div>
+
+<script>
+function clearFilters() {
+    document.getElementById('company').value = '';
+    document.getElementById('department').value = '';
+    document.getElementById('date_from').value = '';
+    document.getElementById('date_to').value = '';
+    document.getElementById('sort_by').value = 'employee_end_date';
+    document.getElementById('output').value = 'screen';
+    document.getElementById('report_form').submit();
+}
+</script>

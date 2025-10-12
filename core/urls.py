@@ -71,9 +71,22 @@ urlpatterns = [
         views.ProductDeleteView.as_view(),
         name="product_delete",
     ),
+    path(
+        "products/<int:pk>/duplicate/",
+        views.ProductDuplicateView.as_view(),
+        name="product_duplicate",
+    ),
     # ProductCategory
-    path("category/", views.ProductCategoryListView.as_view(), name="productcategory_list"),
-    path("category/add/", views.ProductCategoryCreateView.as_view(), name="productcategory_add"),
+    path(
+        "category/",
+        views.ProductCategoryListView.as_view(),
+        name="productcategory_list",
+    ),
+    path(
+        "category/add/",
+        views.ProductCategoryCreateView.as_view(),
+        name="productcategory_add",
+    ),
     path(
         "category/<int:pk>/edit/",
         views.ProductCategoryUpdateView.as_view(),

@@ -7,6 +7,7 @@ from datetime import datetime
 from .models import Employee, EmploymentPeriod
 from core.models import Company, Position, Department
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import ProtectedError
 
 from django.db.models import Q
 
@@ -273,13 +274,20 @@ class EditEmployeeView(LoginRequiredMixin, View):
         return redirect(reverse("employees:detail", args=[emp.pk]))
 
 
-class DeleteEmployeeView(LoginRequiredMixin,View):
+class DeleteEmployeeView(LoginRequiredMixin, View):
     def post(self, request, pk):
         emp = get_object_or_404(Employee, pk=pk)
-        emp.delete()
-        messages.success(request, "Pracownik usunięty")
+        try:
+            emp.delete()
+            messages.success(request, f"Pracownik {emp.first_name} {emp.last_name} został pomyślnie usunięty.")
+        except ProtectedError:
+            messages.error(
+                request,
+                f"Nie można usunąć pracownika {emp.first_name} {emp.last_name}, "
+                f"ponieważ ma powiązane dokumenty wydania (DW). "
+                f"Najpierw usuń lub zmodyfikuj te dokumenty."
+            )
         return redirect(reverse("employees:list"))
-
 
 class EmployeeDetailView(LoginRequiredMixin, View):
     def get(self, request, pk):

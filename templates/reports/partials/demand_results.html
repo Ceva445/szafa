@@ -1,0 +1,52 @@
+{% if document_items %}
+<div class="card">
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Id pracownika</th>
+                    <th>Nazwisko</th>
+                    <th>Imię</th>
+                    <th>Produkt</th>
+                    <th>Rozmiar</th>
+                    <th>Data zakończenia</th>
+                    <th>Ilość</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in document_items %}
+                <tr>
+                    <td>{{ item.document.employee.id }}</td>
+                    <td>{{ item.document.employee.last_name }}</td>
+                    <td>{{ item.document.employee.first_name }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.size|default:"-" }}</td>
+                    <td>{{ item.next_issue_date|date:"Y-m-d" }}</td>
+                    <td>{{ item.quantity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 16px; text-align: center;">
+        <p>Znaleziono {{ document_items.count }} rekordów</p>
+    </div>
+</div>
+{% elif request.GET %}
+<div class="card">
+    <p>Brak danych spełniających kryteria wyszukiwania.</p>
+</div>
+{% endif %}
+
+<script>
+function clearFilters() {
+    document.getElementById('company').value = '';
+    document.getElementById('department').value = '';
+    document.getElementById('date_from').value = '';
+    document.getElementById('date_to').value = '';
+    document.getElementById('sort_by').value = 'employee_end_date';
+    document.getElementById('output').value = 'screen';
+    document.getElementById('report_form').submit();
+}
+</script>

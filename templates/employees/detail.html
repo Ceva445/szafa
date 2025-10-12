@@ -40,7 +40,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th><th>Akcje</th>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>DW</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th><th>Akcje</th>
         </tr>
       </thead>
       <tbody>
@@ -49,6 +49,7 @@
           <td>{{ it.product.code }}</td>
           <td>{{ it.product.name }}</td>
           <td>{{ it.size }}</td>
+          <td><a class="btn small" href="{% url 'documents:dw_detail' it.document.id %}">{{ it.document.document_number }}</a></td>
           <td>{{ it.quantity }}</td>
           <td>{{ it.document.issue_date }}</td>
           <td>{{ it.next_issue_date|default:"-" }}</td>
@@ -81,7 +82,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th>
+          <th>Kod</th><th>Nazwa</th><th>Rozmiar</th><th>DW</th><th>Ilość</th><th>Data wydania</th><th>Data następnego wydania</th>
         </tr>
       </thead>
       <tbody>
@@ -90,6 +91,7 @@
           <td>{{ it.product.code }}</td>
           <td>{{ it.product.name }}</td>
           <td>{{ it.size }}</td>
+          <td><a class="btn small" href="{% url 'documents:dw_detail' it.document.id %}">{{ it.document.document_number }}</a></td>
           <td>{{ it.quantity }}</td>
           <td>{{ it.document.issue_date }}</td>
           <td>{{ it.next_issue_date|default:"-" }}</td>

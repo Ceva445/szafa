@@ -58,6 +58,7 @@ class Product(models.Model):
     category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT)
     size = models.CharField(max_length=20, blank=True, null=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    min_qty_on_stock = models.IntegerField(default=0, help_text="Minimalna ilość produktu, która powinna być na stanie magazynowym")
     period_days = models.IntegerField(help_text="Okres użytkowania w dniach")
     description = models.TextField(blank=True)
 
