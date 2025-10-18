@@ -10,3 +10,6 @@ django-storages
 crispy-bootstrap4
 djangorestframework
 django-cors-headers
+pandas>=2.0.0
+openpyxl>=3.0.10
+reportlab>=3.6.12

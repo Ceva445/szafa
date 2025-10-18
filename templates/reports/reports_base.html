@@ -53,4 +53,27 @@
         </div>
     {% endif %}
 </form>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('report_form');
+  if (!form) return;
+
+  form.addEventListener('submit', function (e) {
+    const outputSelect = form.querySelector('[name="output"]');
+    if (!outputSelect) return;
+
+    const outputValue = outputSelect.value;
+
+    if (outputValue === 'pdf') {
+      form.target = '_blank';
+    } else {
+      form.target = '_self';
+    }
+  });
+});
+</script>
+{% endblock %}
+
 {% endblock %}

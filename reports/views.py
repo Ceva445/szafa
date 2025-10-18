@@ -6,6 +6,7 @@ from employees.models import Employee, EmploymentPeriod
 from documents.models import IssueDocument, DocumentItem, ReceiptDocument, ReceiptItem
 from core.models import Company, Department, Supplier
 from warehouse.models import WarehouseStock
+from .utils import export_to_excel, export_to_pdf
 
 
 class ReportsView(View):
@@ -36,17 +37,16 @@ class ReportsView(View):
             return render(request, "reports/reports_base.html", context)
 
     def render_order_demand_report(self, request, context):
-        """Рендеринг звіту потреб замовлення на основі видань на найближчий місяць"""
-        # Отримуємо параметри фільтрів
+        """Рендеринг звіту запотребowania на замówienie на основі видань."""
         months_ahead = int(request.GET.get("months_ahead", 1))
         show_zero_demand = request.GET.get("show_zero_demand", "false") == "true"
+        output_format = request.GET.get("output", "screen")
 
-        # Розраховуємо дати
         today = date.today()
         start_date = today
         end_date = today + timedelta(days=30 * months_ahead)
 
-        # Отримуємо прогноз видань на наступний місяць
+        # --- Прогноз майбутніх видань ---
         future_issues = (
             DocumentItem.objects.filter(
                 next_issue_date__range=[start_date, end_date], status="active"
@@ -62,15 +62,15 @@ class ReportsView(View):
             .order_by("product__code", "size")
         )
 
-        # Отримуємо поточні запаси
+        # --- Поточні запаси ---
         stock_data = {}
         for stock in WarehouseStock.objects.all():
             key = f"{stock.product_id}_{stock.size}"
             stock_data[key] = stock.quantity
 
-        # Формуємо дані для звіту
+        # --- Формування даних ---
         order_demand_data = []
-        total_order_need = 0  # ДОДАЄМО ЗМІННУЮ ДЛЯ ЗАГАЛЬНОЇ СУМИ
+        total_order_need = 0
 
         for issue in future_issues:
             product_id = issue["product__id"]
@@ -81,10 +81,8 @@ class ReportsView(View):
             min_stock = issue["product__min_qty_on_stock"] or 0
             total_needed = issue["total_needed"] or 0
 
-            # Розраховуємо потребу замовлення
-            # Потреба = (Прогноз видань + Мінімальний запас) - Поточний запас
             order_need = (total_needed + min_stock) - current_stock
-            order_need = max(0, order_need)  # Не може бути від'ємним
+            order_need = max(0, order_need)
 
             if order_need > 0 or show_zero_demand:
                 order_demand_data.append(
@@ -99,12 +97,13 @@ class ReportsView(View):
                         "period": f"{start_date} - {end_date}",
                     }
                 )
-                total_order_need += order_need  # ДОДАЄМО ДО ЗАГАЛЬНОЇ СУМИ
+                total_order_need += order_need
 
+        # --- Оновлюємо контекст ---
         context.update(
             {
                 "order_demand_data": order_demand_data,
-                "total_order_need": total_order_need,  # ДОДАЄМО В КОНТЕКСТ
+                "total_order_need": total_order_need,
                 "filters": {
                     "months_ahead": months_ahead,
                     "show_zero_demand": show_zero_demand,
@@ -114,6 +113,59 @@ class ReportsView(View):
             }
         )
 
+        # --- Формати експорту ---
+        if output_format == "xls":
+            data = [
+                [
+                    item["product_name"],
+                    item["size"] or "-",
+                    item["forecast_issues"],
+                    item["min_stock"],
+                    item["current_stock"],
+                    item["order_need"],
+                ]
+                for item in order_demand_data
+            ]
+            columns = [
+                "Produkt",
+                "Rozmiar",
+                "Prognoza wydań",
+                "Min. stan",
+                "Stan magazynowy",
+                "Do zamówienia",
+            ]
+            return export_to_excel(
+                data, columns, filename="zapotrzebowanie_na_zamówienie.xlsx"
+            )
+
+        elif output_format == "pdf":
+            data = [
+                [
+                    item["product_name"],
+                    item["size"] or "-",
+                    str(item["forecast_issues"]),
+                    str(item["min_stock"]),
+                    str(item["current_stock"]),
+                    str(item["order_need"]),
+                ]
+                for item in order_demand_data
+            ]
+            columns = [
+                "Produkt",
+                "Rozmiar",
+                "Prognoza wydań",
+                "Min. stan",
+                "Stan magazynowy",
+                "Do zamówienia",
+            ]
+            return export_to_pdf(
+                data,
+                columns,
+                title="Zapotrzebowanie na zamówienie",
+                filename="zapotrzebowanie_na_zamówienie.pdf",
+            )
+
+        # --- Екранний режим ---
         return render(request, "reports/reports_base.html", context)
 
     def render_demand_report(self, request, context):
@@ -171,6 +223,69 @@ class ReportsView(View):
                 },
             }
         )
+
+        if output_format == "xls":
+            data = [
+                [
+                    item.document.employee.id,
+                    item.document.employee.last_name,
+                    item.document.employee.first_name,
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.next_issue_date.strftime("%Y-%m-%d")
+                        if item.next_issue_date
+                        else ""
+                    ),
+                    item.quantity,
+                ]
+                for item in document_items
+            ]
+            columns = [
+                "ID pracownika",
+                "Nazwisko",
+                "Imię",
+                "Produkt",
+                "Rozmiar",
+                "Data zakończenia",
+                "Ilość",
+            ]
+            return export_to_excel(
+                data, columns, filename="raport_zapotrzebowania.xlsx"
+            )
+
+        elif output_format == "pdf":
+            data = [
+                [
+                    str(item.document.employee.id),
+                    item.document.employee.last_name,
+                    item.document.employee.first_name,
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.next_issue_date.strftime("%Y-%m-%d")
+                        if item.next_issue_date
+                        else ""
+                    ),
+                    str(item.quantity),
+                ]
+                for item in document_items
+            ]
+            columns = [
+                "ID pracownika",
+                "Nazwisko",
+                "Imię",
+                "Produkt",
+                "Rozmiar",
+                "Data zakończenia",
+                "Ilość",
+            ]
+            return export_to_pdf(
+                data,
+                columns,
+                title="Raport zapotrzebowania",
+                filename="raport_zapotrzebowania.pdf",
+            )
 
         return render(request, "reports/reports_base.html", context)
 
@@ -230,6 +345,64 @@ class ReportsView(View):
             }
         )
 
+        if output_format == "xls":
+            data = [
+                [
+                    item.document.employee.id,
+                    item.document.employee.last_name,
+                    item.document.employee.first_name,
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.document.issue_date.strftime("%Y-%m-%d")
+                        if item.document.issue_date
+                        else ""
+                    ),
+                    item.quantity,
+                ]
+                for item in document_items
+            ]
+            columns = [
+                "ID pracownika",
+                "Nazwisko",
+                "Imię",
+                "Produkt",
+                "Rozmiar",
+                "Data wydania",
+                "Ilość",
+            ]
+            return export_to_excel(data, columns, filename="raport_wydan.xlsx")
+
+        elif output_format == "pdf":
+            data = [
+                [
+                    str(item.document.employee.id),
+                    item.document.employee.last_name,
+                    item.document.employee.first_name,
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.document.issue_date.strftime("%Y-%m-%d")
+                        if item.document.issue_date
+                        else ""
+                    ),
+                    str(item.quantity),
+                ]
+                for item in document_items
+            ]
+            columns = [
+                "ID pracownika",
+                "Nazwisko",
+                "Imię",
+                "Produkt",
+                "Rozmiar",
+                "Data wydania",
+                "Ilość",
+            ]
+            return export_to_pdf(
+                data, columns, title="Raport wydań", filename="raport_wydan.pdf"
+            )
+
         return render(request, "reports/reports_base.html", context)
 
     def render_receipts_report(self, request, context):
@@ -272,5 +445,43 @@ class ReportsView(View):
                 },
             }
         )
+
+        if output_format == "xls":
+            data = [
+                [
+                    item.document.supplier.name if item.document.supplier else "-",
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.document.receipt_date.strftime("%Y-%m-%d")
+                        if item.document.receipt_date
+                        else ""
+                    ),
+                    item.quantity,
+                ]
+                for item in document_items
+            ]
+            columns = ["Dostawca", "Produkt", "Rozmiar", "Data przyjęcia", "Ilość"]
+            return export_to_excel(data, columns, filename="raport_przyjec.xlsx")
+
+        elif output_format == "pdf":
+            data = [
+                [
+                    item.document.supplier.name if item.document.supplier else "-",
+                    item.product.name,
+                    item.size or "-",
+                    (
+                        item.document.receipt_date.strftime("%Y-%m-%d")
+                        if item.document.receipt_date
+                        else ""
+                    ),
+                    str(item.quantity),
+                ]
+                for item in document_items
+            ]
+            columns = ["Dostawca", "Produkt", "Rozmiar", "Data przyjęcia", "Ilość"]
+            return export_to_pdf(
+                data, columns, title="Raport przyjęć", filename="raport_przyjec.pdf"
+            )
 
         return render(request, "reports/reports_base.html", context)
