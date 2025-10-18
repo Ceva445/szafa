@@ -27,10 +27,19 @@
         <p><strong>Okres analizy:</strong> {{ filters.start_date|date:"Y-m-d" }} - {{ filters.end_date|date:"Y-m-d" }}</p>
         <p class="subtitle">Raport oblicza ilość sztuk każdego asortymentu do zamówienia na podstawie wydań w wybranym okresie</p>
     </div>
-    
+
     <div class="filter-actions">
-        <button type="submit" class="btn primary">Generuj raport</button>
-        <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść filtry</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <label for="output" style="margin: 0;">Forma wyświetlania:</label>
+            <select name="output" id="output" style="min-width: 120px;">
+                <option value="screen" {% if request.GET.output == "screen" or not request.GET.output %}selected{% endif %}>Na ekran</option>
+                <option value="pdf" {% if request.GET.output == "pdf" %}selected{% endif %}>PDF</option>
+                <option value="xls" {% if request.GET.output == "xls" %}selected{% endif %}>Excel</option>
+            </select>
+            
+            <button type="submit" class="btn primary">Generuj</button>
+            <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść</button>
+        </div>
     </div>
 </div>
 
