@@ -67,12 +67,14 @@ class IssueCreateView(LoginRequiredMixin, View):
     """Create a DW (IssueDocument) — wydanie dla pracownika"""
 
     def get(self, request):
+        employee_id = request.GET.get("employee")
         context = {
             "employees": Employee.objects.select_related("position", "company").all(),
             "products": Product.objects.all(),
             "active": "documents_dw",
             "today": date.today().isoformat(),
             "items": [],
+            "selected_employee": employee_id,
         }
         return render(request, "documents/create_dw.html", context)
 

@@ -10,3 +10,4 @@ htmlcov/
 data/
 staticfiles/
 szafa_env/
+*.xlsm
