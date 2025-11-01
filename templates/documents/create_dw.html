@@ -10,7 +10,8 @@
         <select name="employee" {% if errors.employee %}style="border-color:#ef4444;"{% endif %}>
           <option value="">-- wybierz --</option>
           {% for e in employees %}
-            <option value="{{ e.id }}" {% if request.POST.employee == e.id|stringformat:"s" %}selected{% endif %}>
+            <option value="{{ e.id }}" 
+                  {% if request.POST.employee == e.id|stringformat:"s" or selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
               {{ e.last_name }} {{ e.first_name }} ({{ e.card_number }})
             </option>
           {% endfor %}

@@ -86,6 +86,7 @@
         <td class="actions">
           <a href="{% url 'employees:detail' emp.id %}" class="btn small" title="Szczegóły pracownika">📂</a>
           <a href="{% url 'employees:edit' emp.id %}" class="btn small" title="Edytuj pracownika">✏️</a>
+          <a href="{% url 'documents:create_dw' %}?employee={{ emp.id }}" class="btn small" title="Nowe DW">➕</a>
           <form method="post" action="{% url 'employees:delete' emp.id %}" style="display:inline;">
             {% csrf_token %}
             <button class="btn small" onclick="return confirm('Usunąć pracownika?')" title="Usuń pracownika">🪣</button>
