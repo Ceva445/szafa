@@ -1,10 +1,10 @@
 from django.views import View
 from django.shortcuts import render
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 from datetime import datetime, date, timedelta
 from employees.models import Employee, EmploymentPeriod
 from documents.models import IssueDocument, DocumentItem, ReceiptDocument, ReceiptItem
-from core.models import Company, Department, Supplier
+from core.models import Company, Department, Supplier, Product
 from warehouse.models import WarehouseStock
 from .utils import export_to_excel, export_to_pdf
 
@@ -37,7 +37,6 @@ class ReportsView(View):
             return render(request, "reports/reports_base.html", context)
 
     def render_order_demand_report(self, request, context):
-        """Рендеринг звіту запотребowania на замówienie на основі видань."""
         months_ahead = int(request.GET.get("months_ahead", 1))
         show_zero_demand = request.GET.get("show_zero_demand", "false") == "true"
         output_format = request.GET.get("output", "screen")
@@ -49,57 +48,56 @@ class ReportsView(View):
         # --- Прогноз майбутніх видань ---
         future_issues = (
             DocumentItem.objects.filter(
-                next_issue_date__range=[start_date, end_date], status="active"
+                Q(next_issue_date__range=[start_date, end_date]), status="active"
             )
-            .values(
-                "product__id",
-                "product__code",
-                "product__name",
-                "product__min_qty_on_stock",
-                "size",
-            )
+            .values("product_id")
             .annotate(total_needed=Sum("quantity"))
-            .order_by("product__code", "size")
         )
 
-        # --- Поточні запаси ---
-        stock_data = {}
-        for stock in WarehouseStock.objects.all():
-            key = f"{stock.product_id}_{stock.size}"
-            stock_data[key] = stock.quantity
+        future_issue_map = {i["product_id"]: i["total_needed"] for i in future_issues}
 
-        # --- Формування даних ---
+        # --- Дані про склад ---
+        stock_map = {s.product_id: s.quantity for s in WarehouseStock.objects.all()}
+
+        # --- Головний queryset продуктів ---
+        products_qs = Product.objects.all()
+
+        # Якщо показуємо лише продукти, які мають потребу або низький запас
+        if not show_zero_demand:
+            products_qs = products_qs.filter(
+                Q(id__in=future_issue_map.keys())
+                | Q(id__in=[pid for pid, qty in stock_map.items() if qty < Product.objects.get(id=pid).min_qty_on_stock])
+            )
+
         order_demand_data = []
-        total_order_need = 0
 
-        for issue in future_issues:
-            product_id = issue["product__id"]
-            size = issue["size"] or ""
-            key = f"{product_id}_{size}"
+        for product in products_qs.only("id", "code", "name", "min_qty_on_stock", "unit_price"):
+            product_id = product.id
+            current_stock = stock_map.get(product_id, 0)
+            min_stock = product.min_qty_on_stock or 0
+            forecast_issues = future_issue_map.get(product_id, 0)
 
-            current_stock = stock_data.get(key, 0)
-            min_stock = issue["product__min_qty_on_stock"] or 0
-            total_needed = issue["total_needed"] or 0
+            order_need = max(0, (forecast_issues + min_stock) - current_stock)
 
-            order_need = (total_needed + min_stock) - current_stock
-            order_need = max(0, order_need)
+            # Якщо не показуємо нульову потребу — пропускаємо
+            if not show_zero_demand and order_need == 0:
+                continue
 
-            if order_need > 0 or show_zero_demand:
-                order_demand_data.append(
-                    {
-                        "product_code": issue["product__code"],
-                        "product_name": issue["product__name"],
-                        "size": size,
-                        "current_stock": current_stock,
-                        "min_stock": min_stock,
-                        "forecast_issues": total_needed,
-                        "order_need": order_need,
-                        "period": f"{start_date} - {end_date}",
-                    }
-                )
-                total_order_need += order_need
+            order_demand_data.append(
+                {
+                    "product_code": product.code,
+                    "product_name": product.name,
+                    "size": "-",
+                    "current_stock": current_stock,
+                    "min_stock": min_stock,
+                    "forecast_issues": forecast_issues,
+                    "order_need": order_need,
+                    "period": f"{start_date} - {end_date}",
+                }
+            )
 
-        # --- Оновлюємо контекст ---
+        total_order_need = sum(i["order_need"] for i in order_demand_data)
+
         context.update(
             {
                 "order_demand_data": order_demand_data,
@@ -113,51 +111,33 @@ class ReportsView(View):
             }
         )
 
-        # --- Формати експорту ---
+        # --- Експорт ---
+        data = [
+            [
+                item["product_name"],
+                item["product_code"],
+                item["size"],
+                item["forecast_issues"],
+                item["min_stock"],
+                item["current_stock"],
+                item["order_need"],
+            ]
+            for item in order_demand_data
+        ]
+        columns = [
+            "Produkt",
+            "Kod produktu",
+            "Rozmiar",
+            "Prognoza wydań",
+            "Min. stan",
+            "Stan magazynowy",
+            "Do zamówienia",
+        ]
+
         if output_format == "xls":
-            data = [
-                [
-                    item["product_name"],
-                    item["size"] or "-",
-                    item["forecast_issues"],
-                    item["min_stock"],
-                    item["current_stock"],
-                    item["order_need"],
-                ]
-                for item in order_demand_data
-            ]
-            columns = [
-                "Produkt",
-                "Rozmiar",
-                "Prognoza wydań",
-                "Min. stan",
-                "Stan magazynowy",
-                "Do zamówienia",
-            ]
-            return export_to_excel(
-                data, columns, filename="zapotrzebowanie_na_zamówienie.xlsx"
-            )
+            return export_to_excel(data, columns, filename="zapotrzebowanie_na_zamówienie.xlsx")
 
         elif output_format == "pdf":
-            data = [
-                [
-                    item["product_name"],
-                    item["size"] or "-",
-                    str(item["forecast_issues"]),
-                    str(item["min_stock"]),
-                    str(item["current_stock"]),
-                    str(item["order_need"]),
-                ]
-                for item in order_demand_data
-            ]
-            columns = [
-                "Produkt",
-                "Rozmiar",
-                "Prognoza wydań",
-                "Min. stan",
-                "Stan magazynowy",
-                "Do zamówienia",
-            ]
             return export_to_pdf(
                 data,
                 columns,
@@ -165,8 +145,9 @@ class ReportsView(View):
                 filename="zapotrzebowanie_na_zamówienie.pdf",
             )
 
-        # --- Екранний режим ---
         return render(request, "reports/reports_base.html", context)
+
+
 
     def render_demand_report(self, request, context):
         """Рендеринг звіту потреб"""
