@@ -66,12 +66,20 @@ class ReportsView(View):
         if not show_zero_demand:
             products_qs = products_qs.filter(
                 Q(id__in=future_issue_map.keys())
-                | Q(id__in=[pid for pid, qty in stock_map.items() if qty < Product.objects.get(id=pid).min_qty_on_stock])
+                | Q(
+                    id__in=[
+                        pid
+                        for pid, qty in stock_map.items()
+                        if qty < Product.objects.get(id=pid).min_qty_on_stock
+                    ]
+                )
             )
 
         order_demand_data = []
 
-        for product in products_qs.only("id", "code", "name", "min_qty_on_stock", "unit_price"):
+        for product in products_qs.only(
+            "id", "code", "name", "min_qty_on_stock", "unit_price"
+        ):
             product_id = product.id
             current_stock = stock_map.get(product_id, 0)
             min_stock = product.min_qty_on_stock or 0
@@ -114,28 +122,30 @@ class ReportsView(View):
         # --- Експорт ---
         data = [
             [
-                item["product_name"],
                 item["product_code"],
+                item["order_need"],
+                item["product_name"],
                 item["size"],
                 item["forecast_issues"],
                 item["min_stock"],
                 item["current_stock"],
-                item["order_need"],
             ]
             for item in order_demand_data
         ]
+
         columns = [
-            "Produkt",
             "Kod produktu",
+            "Do zamówienia",
+            "Produkt",
             "Rozmiar",
             "Prognoza wydań",
             "Min. stan",
             "Stan magazynowy",
-            "Do zamówienia",
         ]
-
         if output_format == "xls":
-            return export_to_excel(data, columns, filename="zapotrzebowanie_na_zamówienie.xlsx")
+            return export_to_excel(
+                data, columns, filename="zapotrzebowanie_na_zamówienie.xlsx"
+            )
 
         elif output_format == "pdf":
             return export_to_pdf(
@@ -146,8 +156,6 @@ class ReportsView(View):
             )
 
         return render(request, "reports/reports_base.html", context)
-
-
 
     def render_demand_report(self, request, context):
         """Рендеринг звіту потреб"""
@@ -204,63 +212,37 @@ class ReportsView(View):
                 },
             }
         )
-
+        data = [
+            [
+                item.document.employee.id,
+                item.document.employee.last_name,
+                item.document.employee.first_name,
+                item.product.name,
+                item.size or "-",
+                (
+                    item.next_issue_date.strftime("%Y-%m-%d")
+                    if item.next_issue_date
+                    else ""
+                ),
+                item.quantity,
+            ]
+            for item in document_items
+        ]
+        columns = [
+            "ID pracownika",
+            "Nazwisko",
+            "Imię",
+            "Produkt",
+            "Rozmiar",
+            "Data zakończenia",
+            "Ilość",
+        ]
         if output_format == "xls":
-            data = [
-                [
-                    item.document.employee.id,
-                    item.document.employee.last_name,
-                    item.document.employee.first_name,
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.next_issue_date.strftime("%Y-%m-%d")
-                        if item.next_issue_date
-                        else ""
-                    ),
-                    item.quantity,
-                ]
-                for item in document_items
-            ]
-            columns = [
-                "ID pracownika",
-                "Nazwisko",
-                "Imię",
-                "Produkt",
-                "Rozmiar",
-                "Data zakończenia",
-                "Ilość",
-            ]
             return export_to_excel(
                 data, columns, filename="raport_zapotrzebowania.xlsx"
             )
 
         elif output_format == "pdf":
-            data = [
-                [
-                    str(item.document.employee.id),
-                    item.document.employee.last_name,
-                    item.document.employee.first_name,
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.next_issue_date.strftime("%Y-%m-%d")
-                        if item.next_issue_date
-                        else ""
-                    ),
-                    str(item.quantity),
-                ]
-                for item in document_items
-            ]
-            columns = [
-                "ID pracownika",
-                "Nazwisko",
-                "Imię",
-                "Produkt",
-                "Rozmiar",
-                "Data zakończenia",
-                "Ilość",
-            ]
             return export_to_pdf(
                 data,
                 columns,
@@ -325,61 +307,35 @@ class ReportsView(View):
                 },
             }
         )
-
+        data = [
+            [
+                item.document.employee.id,
+                item.document.employee.last_name,
+                item.document.employee.first_name,
+                item.product.name,
+                item.size or "-",
+                (
+                    item.document.issue_date.strftime("%Y-%m-%d")
+                    if item.document.issue_date
+                    else ""
+                ),
+                item.quantity,
+            ]
+            for item in document_items
+        ]
+        columns = [
+            "ID pracownika",
+            "Nazwisko",
+            "Imię",
+            "Produkt",
+            "Rozmiar",
+            "Data wydania",
+            "Ilość",
+        ]
         if output_format == "xls":
-            data = [
-                [
-                    item.document.employee.id,
-                    item.document.employee.last_name,
-                    item.document.employee.first_name,
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.document.issue_date.strftime("%Y-%m-%d")
-                        if item.document.issue_date
-                        else ""
-                    ),
-                    item.quantity,
-                ]
-                for item in document_items
-            ]
-            columns = [
-                "ID pracownika",
-                "Nazwisko",
-                "Imię",
-                "Produkt",
-                "Rozmiar",
-                "Data wydania",
-                "Ilość",
-            ]
             return export_to_excel(data, columns, filename="raport_wydan.xlsx")
 
         elif output_format == "pdf":
-            data = [
-                [
-                    str(item.document.employee.id),
-                    item.document.employee.last_name,
-                    item.document.employee.first_name,
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.document.issue_date.strftime("%Y-%m-%d")
-                        if item.document.issue_date
-                        else ""
-                    ),
-                    str(item.quantity),
-                ]
-                for item in document_items
-            ]
-            columns = [
-                "ID pracownika",
-                "Nazwisko",
-                "Imię",
-                "Produkt",
-                "Rozmiar",
-                "Data wydania",
-                "Ilość",
-            ]
             return export_to_pdf(
                 data, columns, title="Raport wydań", filename="raport_wydan.pdf"
             )
@@ -427,40 +383,43 @@ class ReportsView(View):
             }
         )
 
-        if output_format == "xls":
-            data = [
-                [
-                    item.document.supplier.name if item.document.supplier else "-",
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.document.receipt_date.strftime("%Y-%m-%d")
-                        if item.document.receipt_date
-                        else ""
-                    ),
-                    item.quantity,
-                ]
-                for item in document_items
+        data = [
+            [
+                item.document.supplier.name if item.document.supplier else "-",
+                item.document.recipient.name if item.document.recipient else "-",
+                item.product.code or "-",
+                item.product.name,
+                item.size or "-",
+                str(item.quantity),
+                str(item.unit_price) if item.unit_price is not None else "-",
+                str(item.total_value) if item.total_value is not None else "-",
+                (
+                    item.document.issue_date.strftime("%Y-%m-%d")
+                    if item.document.issue_date
+                    else ""
+                ),
+                item.document.document_number or "-",
             ]
-            columns = ["Dostawca", "Produkt", "Rozmiar", "Data przyjęcia", "Ilość"]
+            for item in receipt_items
+        ]
+
+        columns = [
+            "Dostawca",
+            "Odbiorca",
+            "Kod produktu",
+            "Nazwa produktu",
+            "Rozmiar",
+            "Ilość",
+            "Cena",
+            "Wartość",
+            "Data przyjęcia",
+            "Nr dokumentu",
+        ]
+
+        if output_format == "xls":
             return export_to_excel(data, columns, filename="raport_przyjec.xlsx")
 
         elif output_format == "pdf":
-            data = [
-                [
-                    item.document.supplier.name if item.document.supplier else "-",
-                    item.product.name,
-                    item.size or "-",
-                    (
-                        item.document.receipt_date.strftime("%Y-%m-%d")
-                        if item.document.receipt_date
-                        else ""
-                    ),
-                    str(item.quantity),
-                ]
-                for item in document_items
-            ]
-            columns = ["Dostawca", "Produkt", "Rozmiar", "Data przyjęcia", "Ilość"]
             return export_to_pdf(
                 data, columns, title="Raport przyjęć", filename="raport_przyjec.pdf"
             )

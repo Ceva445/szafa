@@ -5,12 +5,12 @@
             <thead>
                 <tr>
                     <th>Kod produktu</th>
-                    <th>Nazwa produktu</th>
+                    <th>Do zamówienia</th>
+                    <th>Produkt</th>
                     <th>Rozmiar</th>
-                    <th>Aktualny stan</th>
-                    <th>Minimalny stan</th>
                     <th>Prognoza wydań</th>
-                    <th>Ilość do zamówienia</th>
+                    <th>Min. stan</th>
+                    <th>Stan magazynowy</th>
                     <th>Okres</th>
                 </tr>
             </thead>
@@ -18,19 +18,20 @@
                 {% for item in order_demand_data %}
                 <tr>
                     <td>{{ item.product_code }}</td>
+                    <td><strong>{{ item.order_need }}</strong></td>
                     <td>{{ item.product_name }}</td>
                     <td>{{ item.size|default:"-" }}</td>
-                    <td>{{ item.current_stock }}</td>
-                    <td>{{ item.min_stock }}</td>
                     <td>{{ item.forecast_issues }}</td>
-                    <td><strong>{{ item.order_need }}</strong></td>
+                    <td>{{ item.min_stock }}</td>
+                    <td>{{ item.current_stock }}</td>
                     <td>{{ item.period }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
     </div>
-    
+
     <div style="margin-top: 16px; text-align: center;">
         <p>Znaleziono {{ order_demand_data|length }} produktów z zapotrzebowaniem na zamówienie</p>
         <p><strong>Łączna ilość do zamówienia: {{ total_order_need }} sztuk</strong></p>
