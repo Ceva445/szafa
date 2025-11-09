@@ -123,7 +123,14 @@ function addRow(){
     <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
   `;
   container.appendChild(newRow);
+
   const productSelect = newRow.querySelector('.product-select');
+  $(productSelect).select2({
+      placeholder: "-- produkt --",
+      allowClear: true,
+      width: 'resolve'
+  });
+
   productSelect.addEventListener('change', handleProductChange);
   if (productSelect.value) setRowFromProduct(newRow, productSelect.value);
 }
@@ -146,5 +153,28 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ініціалізація Select2 для всіх <select>
+    const employeeSelect = document.querySelector('select[name="employee"]');
+    if(employeeSelect){
+        $(employeeSelect).select2({
+            placeholder: "-- wybierz --",
+            allowClear: true,
+            width: '100%'
+        });
+    }
+
+    const productSelects = document.querySelectorAll('.product-select');
+    productSelects.forEach(select => {
+        $(select).select2({
+            placeholder: "-- produkt --",
+            allowClear: true,
+            width: 'resolve'
+        });
+    });
+});
+</script>
+
 {% endblock %}
 {% endblock %}

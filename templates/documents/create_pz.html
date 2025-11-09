@@ -134,6 +134,14 @@ function addRow() {
   `;
   container.appendChild(newRow);
   const select = newRow.querySelector('.product-select');
+
+  // Ініціалізація Select2 для нового рядка
+  $(select).select2({
+    placeholder: "-- produkt --",
+    allowClear: true,
+    width: 'resolve'
+  });
+
   select.addEventListener('change', handleProductChange);
   if (select.value) setRowFromProduct(newRow, select.value);
 }
@@ -150,6 +158,14 @@ function handleProductChange(event) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Ініціалізація Select2 для всіх існуючих полів продуктів
+  $('.product-select').select2({
+    placeholder: "-- produkt --",
+    allowClear: true,
+    width: 'resolve'
+  });
+
+  // Прив'язка події зміни до існуючих select
   document.querySelectorAll('.product-select').forEach(select => {
     select.addEventListener('change', handleProductChange);
     if (select.value) setRowFromProduct(select.closest('.item-row'), select.value);

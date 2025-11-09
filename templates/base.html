@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>{% block title %}Magazyn - System{% endblock %}</title>
-
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <style>
     /* Простий layout: ліво - фіксована колонка, праворуч — контент */
     html,body { height:100%; margin:0; font-family: Arial, Helvetica, sans-serif; }
@@ -397,7 +397,11 @@
       });
     })();
   </script>
+<!-- jQuery (необхідний для Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
