@@ -78,6 +78,10 @@ urlpatterns = [
         views.ProductDuplicateView.as_view(),
         name="product_duplicate",
     ),
+    #Pending Product
+    path("pending/", views.PendingProductListView.as_view(), name="pending_list"),
+    path("pending/<int:pk>/approve/", views.PendingProductApproveView.as_view(), name="pending_approve"),
+    path("pending/<int:pk>/delete/", views.PendingProductDeleteView.as_view(), name="pending_delete"),
     # ProductCategory
     path(
         "category/",

@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.urls import reverse
 from django.contrib import messages
-from .models import Company, Department, Position, ProductCategory, Supplier, Product
+from .models import Company, Department, PendingProduct, Position, ProductCategory, Supplier, Product
 from .forms import (
     CompanyForm,
     DepartmentForm,
@@ -291,6 +291,86 @@ class ProductDuplicateView(LoginRequiredMixin, View):
             "cancel_url": reverse(f"core:{self.model._meta.model_name}_list"),
         }
         return render(request, self.template_name, ctx)
+
+
+class PendingProductListView(View):
+    template_name = "core/pending_list.html"
+
+    def get(self, request):
+        objects = PendingProduct.objects.order_by("-created_at")
+        categories = ProductCategory.objects.all()
+        return render(request, self.template_name, {
+            "objects": objects,
+            "categories": categories,
+        })
+
+    def post(self, request):
+        action = request.POST.get("action")
+        ids = request.POST.getlist("selected")
+
+        if not ids:
+            messages.warning(request, "Nie wybrano żadnych pozycji.")
+            return redirect("core:pending_list")
+
+        qs = PendingProduct.objects.filter(id__in=ids)
+
+        if action == "approve":
+            items = list(qs)
+            new_products = []
+
+            for item in items:
+                new_products.append(Product(
+                    code=request.POST.get(f"code_{item.id}"),
+                    name=request.POST.get(f"name_{item.id}"),
+                    size=request.POST.get(f"size_{item.id}"),
+                    unit_price=request.POST.get(f"price_{item.id}"),
+                    period_days=request.POST.get(f"period_{item.id}"),
+                    min_qty_on_stock=request.POST.get(f"minqty_{item.id}"),
+                    category_id=request.POST.get(f"category_{item.id}"),
+                    description=item.description,
+                ))
+
+            Product.objects.bulk_create(new_products)
+            qs.delete()
+
+            messages.success(request, f"Zatwierdzono {len(new_products)} produktów.")
+            return redirect("core:pending_list")
+
+        if action == "delete":
+            count = qs.count()
+            qs.delete()
+            messages.success(request, f"Usunięto {count} pozycji.")
+            return redirect("core:pending_list")
+
+        messages.error(request, "Nieznana akcja.")
+        return redirect("core:pending_list")
+
+
+class PendingProductApproveView(View):
+    def post(self, request, pk):
+        item = get_object_or_404(PendingProduct, pk=pk)
+        Product.objects.create(
+            code=item.code,
+            name=item.name,
+            category=item.category,
+            size=item.size,
+            unit_price=item.unit_price,
+            min_qty_on_stock=item.min_qty_on_stock,
+            period_days=item.period_days,
+            description=item.description,
+        )
+        
+        item.delete()
+        messages.success(request, f"Produkt {item.code} został zatwierdzony.")
+        return redirect("core:pending_list")
+    
+
+class PendingProductDeleteView(View):
+    def post(self, request, pk):
+        item = get_object_or_404(PendingProduct, pk=pk)
+        item.delete()
+        messages.success(request, "Usunięto rekord.")
+        return redirect("core:pending_list")
 
 
 class ProductDeleteView(BaseDeleteView):
