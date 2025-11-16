@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block page_title %}Analiza faktur{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:500px; margin:auto;">
+  <h2 style="margin-top:0; margin-bottom:12px; font-size:18px; color:#111827;">Analiza faktury</h2>
+  <p class="subtitle" style="margin-bottom:16px;">Wybierz plik faktury i typ dokumentu, aby rozpocząć analizę za pomocą AI.</p>
+
+  {% if error %}
+    <div style="background:#fee2e2; color:#b91c1c; padding:10px 12px; border-radius:6px; margin-bottom:12px;">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="filter-group">
+      <label>Wybierz typ faktury</label>
+      <select name="doc_type">
+        <option value="extract_fv">FV</option>
+        <!-- <option value="extract_wz">WZ</option> -->
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Dodaj plik</label>
+      <input type="file" name="file" required>
+    </div>
+
+    <div style="margin-top:20px; text-align:right;">
+      <button class="btn primary" type="submit" style="width:100%;">Wyślij do analizy</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

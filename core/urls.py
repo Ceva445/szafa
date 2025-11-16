@@ -6,6 +6,7 @@ app_name = "core"
 urlpatterns = [
     #api
     path("api/", include("core.api.urls")),
+    path("invoice/analyze/", views.InvoiceAnalyzeView.as_view(), name="invoice_analyze"),
     # Company
     path("company/", views.CompanyListView.as_view(), name="company_list"),
     path("company/add/", views.CompanyCreateView.as_view(), name="company_add"),

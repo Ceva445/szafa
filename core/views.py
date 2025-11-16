@@ -12,8 +12,47 @@ from .forms import (
     ProductForm,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from szafa import settings
+import requests
 
+#Invoice Analyze View
+class InvoiceAnalyzeView(LoginRequiredMixin, View):
+    template_name = "core/invoice_analyze.html"
 
+    def get(self, request, *args, **kwargs):
+        # Відображаємо форму
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        doc_type = request.POST.get("doc_type")
+        forward_url_map = {
+            "extract_fv": "/core/api/products/pending/create/",
+            "extract_wz": "",# додати фізніше URL
+        }
+
+        if file and doc_type:
+            path = default_storage.save(f"uploads/{file.name}", ContentFile(file.read()))
+            file_url = settings.HOSTING_URL + default_storage.url(path)
+
+            payload = {
+                "doc_type": doc_type,
+                "file_url": file_url,
+                "forward_url": settings.HOSTING_URL + forward_url_map.get(doc_type, "/"),
+            }
+            print("Payload:", payload)
+
+            try:
+                response = requests.post(settings.LUSTRO_URL, json=payload)
+                response.raise_for_status()
+                return redirect("core:invoice_analyze")
+            except Exception as e:
+                return render(request, self.template_name, {"error": str(e)})
+
+        return render(request, self.template_name, {"error": "Brak pliku lub typu faktury"})
+    
 # --- reusable base classes ---
 class BaseListView(LoginRequiredMixin, View):
     model = None

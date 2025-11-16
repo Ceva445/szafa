@@ -136,6 +136,9 @@ STATICFILES_DIRS = (BASE_DIR / "static",)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 ASSETS_ROOT = "/static/assets"
 
+LUSTRO_URL = os.environ.get("LUSTRO_URL")
+HOSTING_URL = os.environ.get("HOSTING_URL")
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 

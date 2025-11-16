@@ -4,10 +4,12 @@ from core.api.serializer import FlexibleInvoiceSerializer
 from core.models import PendingProduct, ProductCategory
 from decimal import Decimal, InvalidOperation
 from django.db import transaction
+from rest_framework.permissions import IsAuthenticated
 
 
 class InvoiceToPendingProductsAPIView(generics.GenericAPIView):
     serializer_class = FlexibleInvoiceSerializer
+    permission_classes = [IsAuthenticated]
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
