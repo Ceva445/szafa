@@ -65,3 +65,20 @@ class Product(models.Model):
     def __str__(self):
         size_display = f" - {self.size}" if self.size else ""
         return f"{self.code} - {self.name}{size_display}"
+    
+
+class PendingProduct(models.Model):
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=200)
+    category = models.ForeignKey(ProductCategory, on_delete=models.PROTECT, default="clothing")
+    size = models.CharField(max_length=20, blank=True, null=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    min_qty_on_stock = models.IntegerField(default=0)
+    period_days = models.IntegerField(default=365)
+    description = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"[PENDING] {self.code} - {self.name}"

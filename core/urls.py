@@ -1,9 +1,11 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = "core"
 
 urlpatterns = [
+    #api
+    path("api/", include("core.api.urls")),
     # Company
     path("company/", views.CompanyListView.as_view(), name="company_list"),
     path("company/add/", views.CompanyCreateView.as_view(), name="company_add"),
@@ -76,6 +78,10 @@ urlpatterns = [
         views.ProductDuplicateView.as_view(),
         name="product_duplicate",
     ),
+    #Pending Product
+    path("pending/", views.PendingProductListView.as_view(), name="pending_list"),
+    path("pending/<int:pk>/approve/", views.PendingProductApproveView.as_view(), name="pending_approve"),
+    path("pending/<int:pk>/delete/", views.PendingProductDeleteView.as_view(), name="pending_delete"),
     # ProductCategory
     path(
         "category/",
