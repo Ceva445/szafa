@@ -136,6 +136,9 @@ STATICFILES_DIRS = (BASE_DIR / "static",)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 ASSETS_ROOT = "/static/assets"
 
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
 LUSTRO_URL = os.environ.get("LUSTRO_URL")
 HOSTING_URL = os.environ.get("HOSTING_URL")
 
