@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 
 class InvoiceToPendingProductsAPIView(generics.GenericAPIView):
     serializer_class = FlexibleInvoiceSerializer
-    permission_classes = [IsAuthenticated]
+    #permission_classes = [IsAuthenticated] # додати аутентифікацію пізніше
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):

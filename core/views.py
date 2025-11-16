@@ -41,6 +41,7 @@ class InvoiceAnalyzeView(LoginRequiredMixin, View):
                 "doc_type": doc_type,
                 "file_url": file_url,
                 "forward_url": settings.HOSTING_URL + forward_url_map.get(doc_type, "/"),
+                "wait_response": False, # додати конфігурацію
             }
             print("Payload:", payload)
 
