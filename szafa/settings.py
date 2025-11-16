@@ -45,11 +45,14 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "crispy_bootstrap4",
     "crispy_forms",
+    "corsheaders",
     "core",
     "employees",
     "documents",
     "warehouse",
     "reports",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
 ]
 
 MIDDLEWARE = [
@@ -83,6 +86,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "szafa.wsgi.application"
 
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "My API",
+    "DESCRIPTION": "API Documentation",
+    "VERSION": "1.0.0",
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -134,3 +146,4 @@ CORS_ORIGIN_ALLOW_ALL = True
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+CORS_ORIGIN_ALLOW_ALL = True

@@ -13,3 +13,6 @@ django-cors-headers
 pandas>=2.0.0
 openpyxl>=3.0.10
 reportlab>=3.6.12
+drf-spectacular
+drf-spectacular-sidecar
+django-cors-headers

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Company, Department, Position, Supplier, ProductCategory, Product
+from .models import Company, Department, Position, Supplier, ProductCategory, Product, PendingProduct
 
 
 @admin.register(Company)
@@ -39,3 +39,10 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ["category", "category__type"]
     search_fields = ["code", "name"]
     list_editable = ["unit_price", "period_days"]
+
+
+@admin.register(PendingProduct)
+class PendingProductAdmin(admin.ModelAdmin):
+    list_display = ["code", "name", "category", "size", "unit_price", "description"]
+    list_filter = ["category", "category__type"]
+    search_fields = ["code", "name"]

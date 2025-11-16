@@ -1,9 +1,11 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = "core"
 
 urlpatterns = [
+    #api
+    path("api/", include("core.api.urls")),
     # Company
     path("company/", views.CompanyListView.as_view(), name="company_list"),
     path("company/add/", views.CompanyCreateView.as_view(), name="company_add"),
