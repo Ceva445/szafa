@@ -52,8 +52,8 @@
               {% endfor %}
             </select>
             <input name="quantity[]" class="small" placeholder="Ilość" value="{{ qty }}" />
-            <input name="size[]" class="small size-field" readonly value="{{ size }}" />
-            <input name="unit_price[]" class="small price-field" readonly value="{{ price }}" />
+            <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly value="{{ size }}" />
+            <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly value="{{ price }}" />
             <input name="notes[]" class="small" placeholder="Uwagi" value="{{ note }}" />
             <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
           </div>
@@ -69,8 +69,8 @@
             {% endfor %}
           </select>
           <input name="quantity[]" class="small" placeholder="Ilość" />
-          <input name="size[]" class="small size-field" readonly />
-          <input name="unit_price[]" class="small price-field" readonly />
+          <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
+          <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
           <input name="notes[]" class="small" placeholder="Uwagi" />
           <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
         </div>
@@ -86,27 +86,35 @@
 
 {% block scripts %}
 <script>
-const productsData = {
-  {% for p in products %}
-    "{{ p.id }}": { size: "{{ p.size|default:'' }}", price: "{{ p.unit_price }}" }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-};
-
-function setRowFromProduct(row, productId) {
+function updateProductFields(selectElement) {
+  const row = selectElement.closest('.item-row');
   const sizeField = row.querySelector('.size-field');
   const priceField = row.querySelector('.price-field');
-  if (productId && productsData[productId]) {
-    const p = productsData[productId];
-    if (!sizeField.value) sizeField.value = p.size || '';
-    if (!priceField.value) priceField.value = p.price || '';
+  
+  const selectedOption = selectElement.options[selectElement.selectedIndex];
+  
+  if (selectedOption && selectedOption.value) {
+    const size = selectedOption.getAttribute('data-size') || '';
+    const price = selectedOption.getAttribute('data-price') || '';
+    
+    sizeField.value = size;
+    priceField.value = price;
+  } else {
+    // Якщо продукт не вибрано - очищаємо поля
+    sizeField.value = '';
+    priceField.value = '';
   }
 }
 
 function addRow(){
   const container = document.getElementById('items');
+  const index = container.children.length;
+  
   const newRow = document.createElement('div');
   newRow.className = 'item-row';
+  newRow.setAttribute('data-index', index);
   newRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
+  
   newRow.innerHTML = `
     <select name="product_id[]" class="product-select">
       <option value="">-- produkt --</option>
@@ -117,64 +125,62 @@ function addRow(){
       {% endfor %}
     </select>
     <input name="quantity[]" class="small" placeholder="Ilość" />
-    <input name="size[]" class="small size-field" readonly />
-    <input name="unit_price[]" class="small price-field" readonly />
+    <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
+    <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
     <input name="notes[]" class="small" placeholder="Uwagi" />
     <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
-  `;
+  `; 
   container.appendChild(newRow);
 
   const productSelect = newRow.querySelector('.product-select');
   $(productSelect).select2({
-      placeholder: "-- produkt --",
-      allowClear: true,
-      width: 'resolve'
+    placeholder: "-- produkt --",
+    allowClear: true,
+    width: 'resolve'
   });
 
-  productSelect.addEventListener('change', handleProductChange);
-  if (productSelect.value) setRowFromProduct(newRow, productSelect.value);
+  $(productSelect).on('change', function() {
+    updateProductFields(this);
+  });
 }
 
 function removeRow(btn){
   const row = btn.closest('.item-row');
-  if(row) row.remove();
-}
-
-function handleProductChange(event) {
-  const select = event.target;
-  const row = select.closest('.item-row');
-  setRowFromProduct(row, select.value);
+  if(row) {
+    const select = row.querySelector('.product-select');
+    if (select && $(select).data('select2')) {
+      $(select).select2('destroy');
+    }
+    row.remove();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  const employeeSelect = document.querySelector('select[name="employee"]');
+  if (employeeSelect) {
+    $(employeeSelect).select2({
+      placeholder: "-- wybierz --",
+      allowClear: true,
+      width: '100%'
+    });
+  }
+
   document.querySelectorAll('.product-select').forEach(select => {
-    select.addEventListener('change', handleProductChange);
-    if (select.value) setRowFromProduct(select.closest('.item-row'), select.value);
+    $(select).select2({
+      placeholder: "-- produkt --",
+      allowClear: true,
+      width: 'resolve'
+    });
+
+    $(select).on('change', function() {
+      updateProductFields(this);
+    });
+
+    if (select.value) {
+      updateProductFields(select);
+    }
   });
 });
 </script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Ініціалізація Select2 для всіх <select>
-    const employeeSelect = document.querySelector('select[name="employee"]');
-    if(employeeSelect){
-        $(employeeSelect).select2({
-            placeholder: "-- wybierz --",
-            allowClear: true,
-            width: '100%'
-        });
-    }
-
-    const productSelects = document.querySelectorAll('.product-select');
-    productSelects.forEach(select => {
-        $(select).select2({
-            placeholder: "-- produkt --",
-            allowClear: true,
-            width: 'resolve'
-        });
-    });
-});
-</script>
-
 {% endblock %}
 {% endblock %}
