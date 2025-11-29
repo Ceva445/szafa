@@ -18,7 +18,6 @@ class PendingDocumentImportAPIView(generics.GenericAPIView):
         items = data.get("items", [])
         
         suplier_str = data.get("seller", {}).get("name", "").split()[0].lower()
-        print("Suplier string:", suplier_str)
         pending_doc = PendingReceiptDocument.objects.create(
             supplier=Supplier.objects.filter(name__iexact=suplier_str).first(),
             recipient=Company.objects.filter(name="Ceva 1").first(),

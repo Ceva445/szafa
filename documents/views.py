@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q, Prefetch
 from datetime import datetime, date
 
-from .models import IssueDocument, ReceiptDocument, DocumentItem, ReceiptItem
+from .models import IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
 from core.models import Product, Supplier, Company
 from employees.models import Employee
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -726,3 +726,137 @@ class PZListView(LoginRequiredMixin,View):
             "doc_type": "PZ",
         }
         return render(request, "documents/list_pz.html", context)
+    
+
+# =====================================================
+# =============== PENDING PRODUCTS VIEWS ==============
+# =====================================================
+class PendingReceiptListView(View):
+    def get(self, request):
+        docs = PendingReceiptDocument.objects.order_by("-created_at")
+        return render(request, "documents/pending_receipt_list.html", {
+            "documents": docs
+        })
+
+
+class PendingReceiptDeleteView(View):
+    def post(self, request, pk):
+        get_object_or_404(PendingReceiptDocument, pk=pk).delete()
+        messages.success(request, "Usunięto dokument.")
+        return redirect("documents:pending_receipt_list")
+
+
+class PendingReceiptDetailView(View):
+    def get(self, request, pk):
+        doc = get_object_or_404(PendingReceiptDocument, pk=pk)
+        return render(request, "documents/pending_receipt_detail.html", {
+            "doc": doc,
+            "suppliers": Supplier.objects.all(),
+            "companies": Company.objects.all(),
+            "products": Product.objects.all(),
+        })
+
+    
+    @transaction.atomic
+    def post(self, request, pk):
+        doc = get_object_or_404(PendingReceiptDocument, pk=pk)
+
+        doc.supplier_id = request.POST.get("supplier") or None
+        doc.recipient_id = request.POST.get("recipient") or None
+
+        delivery_raw = request.POST.get("delivery_date")
+        try:
+            doc.delivery_date = datetime.strptime(delivery_raw, "%Y-%m-%d").date() if delivery_raw else None
+        except (ValueError, TypeError):
+            doc.delivery_date = None
+        doc.save()
+
+        post = request.POST
+        incoming_ids = set()
+
+        existing_items = {str(i.id): i for i in doc.items.select_related("product").all()}
+        new_pending = []
+
+        for key in post:
+            if not key.startswith("product_"):
+                continue
+
+            item_id = key.replace("product_", "").strip()
+            incoming_ids.add(item_id)
+
+            product_id = post.get(f"product_{item_id}")
+            delivered_raw = post.get(f"delivered_{item_id}") or "0"
+
+            try:
+                delivered = int(float(delivered_raw))
+            except (ValueError, TypeError):
+                delivered = 0
+
+            if not product_id:
+                continue
+
+            try:
+                product = Product.objects.get(pk=product_id)
+            except Product.DoesNotExist:
+                continue
+
+            if item_id.startswith("new_"):
+                print("Creating new pending item")
+                new_pending.append(PendingReceiptItem(
+                    document=doc,
+                    product=product,
+                    quantity_delivered=delivered,
+                ))
+            else:
+                item = existing_items.get(item_id)
+                if not item:
+                    continue
+                item.product = product
+                item.quantity_delivered = delivered
+                item.save()
+
+        if new_pending:
+            print("Bulk creating new pending items")
+            created_items = PendingReceiptItem.objects.bulk_create(new_pending)
+            new_pending_ids = {str(item.id) for item in created_items}
+            incoming_ids.update(new_pending_ids)
+
+        db_ids = {str(i.id) for i in doc.items.all()}
+        to_delete = db_ids - incoming_ids
+        if to_delete:
+            PendingReceiptItem.objects.filter(id__in=to_delete).delete()
+
+        if "approve" in post:
+            issue_date = doc.delivery_date or date.today()
+            new_doc = ReceiptDocument.objects.create(
+                supplier=doc.supplier,
+                recipient=doc.recipient,
+                issue_date=issue_date,
+            )
+
+            receipt_items = []
+            for item in doc.items.select_related("product").all():
+                if not item.product:
+                    continue
+                unit_price = item.product.unit_price or 0
+                qty = item.quantity_delivered or 0
+                receipt_items.append(ReceiptItem(
+                    document=new_doc,
+                    product=item.product,
+                    quantity=qty,
+                    size=item.product.size or "",
+                    unit_price=unit_price,
+                    total_value=unit_price * qty,
+                    notes=getattr(item, "description", "") or "",
+                ))
+
+            if receipt_items:
+                ReceiptItem.objects.bulk_create(receipt_items)
+
+            doc.items.all().delete()
+            doc.delete()
+
+            messages.success(request, "Dokument został zatwierdzony.")
+            return redirect("documents:pending_receipt_list")
+
+        return redirect("documents:pending_receipt_detail", pk=pk)

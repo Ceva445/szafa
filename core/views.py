@@ -334,7 +334,7 @@ class ProductDuplicateView(LoginRequiredMixin, View):
 
 
 class PendingProductListView(View):
-    template_name = "core/pending_list.html"
+    template_name = "core/pending_products_list.html"
 
     def get(self, request):
         objects = PendingProduct.objects.order_by("-created_at")

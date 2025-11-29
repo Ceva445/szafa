@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Edycja dokumentu{% endblock %}
+{% block page_title %}Dokument oczekujący{% endblock %}
+{% block active %}system{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <form method="post" id="documentForm">
+        {% csrf_token %}
+
+        <div class="filter-row">
+            <label>Dostawca
+                <select name="supplier">
+                    <option value="">-- wybierz --</option>
+                    {% for s in suppliers %}
+                        <option value="{{ s.id }}" {% if doc.supplier.id == s.id %}selected{% endif %}>
+                            {{ s.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>Odbiorca
+                <select name="recipient">
+                    <option value="">-- wybierz --</option>
+                    {% for c in companies %}
+                        <option value="{{ c.id }}" {% if doc.recipient.id == c.id %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>Data dostawy
+                <input type="date" name="delivery_date" id="delivery_date"
+                       value="{{ doc.delivery_date|default:'' }}">
+            </label>
+        </div>
+
+        <hr>
+
+        <h4>Pozycje</h4>
+
+        <div id="items">
+
+            {% for item in doc.items.all %}
+            <div class="item-row" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;" data-id="{{ item.id }}">
+
+                <select name="product_{{ item.id }}" class="product-select" style="min-width:240px;">
+                    <option value="">-- produkt --</option>
+                    {% for p in products %}
+                        <option value="{{ p.id }}" {% if item.product and item.product.id == p.id %}selected{% endif %}>
+                            {{ p.code }} — {{ p.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <input name="delivered_{{ item.id }}" class="small" placeholder="Dostarczono"
+                       value="{{ item.quantity_delivered }}">
+
+                <button type="button" class="btn ghost small remove-btn">Usuń</button>
+            </div>
+            {% endfor %}
+
+        </div>
+
+        <div style="margin-top:8px;">
+            <button type="button" class="btn small" id="addLineBtn">Dodaj pozycję</button>
+            <button class="btn primary small" name="approve">Zatwierdź dokument</button>
+        </div>
+
+    </form>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+function initSelect2(element) {
+    $(element).select2({
+        placeholder: "-- produkt --",
+        allowClear: true,
+        width: 'resolve'
+    });
+}
+
+// Activate select2 for existing fields
+document.querySelectorAll('.product-select').forEach(s => initSelect2(s));
+
+
+// Default delivery date if empty
+const d = document.getElementById("delivery_date");
+if (!d.value) {
+    d.value = new Date().toISOString().split("T")[0];
+}
+
+
+let newIndex = 1;
+
+document.getElementById("addLineBtn").addEventListener("click", () => {
+    const container = document.getElementById("items");
+    const id = `new_${newIndex++}`;
+
+    const row = document.createElement("div");
+    row.className = "item-row";
+    row.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:6px;";
+    row.setAttribute("data-id", id);
+
+    row.innerHTML = `
+        <select name="product_${id}" class="product-select" style="min-width:240px;">
+            <option value="">-- produkt --</option>
+            {% for p in products %}
+                <option value="{{ p.id }}">{{ p.code }} — {{ p.name }}</option>
+            {% endfor %}
+        </select>
+
+        <input name="delivered_${id}" class="small" placeholder="Dostarczono" value="0">
+
+        <button type="button" class="btn ghost small remove-btn">Usuń</button>
+    `;
+
+    container.appendChild(row);
+
+    // enable select2 for new row
+    initSelect2(row.querySelector(".product-select"));
+});
+
+
+document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("remove-btn")) {
+
+        const row = e.target.closest(".item-row");
+
+        // destroy select2 instance
+        const select = row.querySelector('.product-select');
+        if (select && $(select).data('select2')) {
+            $(select).select2('destroy');
+        }
+
+        row.remove();
+    }
+});
+
+</script>
+{% endblock %}
