@@ -1,9 +1,10 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = "documents"
 
 urlpatterns = [
+    path("api/" , include("documents.api.urls")),
     path("dw/", views.DWListView.as_view(), name="dw_list"),
     path("pz/", views.PZListView.as_view(), name="pz_list"),
 
