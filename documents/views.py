@@ -70,7 +70,7 @@ class IssueCreateView(LoginRequiredMixin, View):
         employee_id = request.GET.get("employee")
         context = {
             "employees": Employee.objects.select_related("position", "company").all(),
-            "products": Product.objects.all(),
+            "products": Product.objects.filter(warehousestock__quantity__gt=0).distinct(),
             "active": "documents_dw",
             "today": date.today().isoformat(),
             "items": [],
