@@ -30,7 +30,7 @@ class InvoiceAnalyzeView(LoginRequiredMixin, View):
         doc_type = request.POST.get("doc_type")
         forward_url_map = {
             "extract_fv": "/core/api/products/pending/create/",
-            "extract_wz": "",# додати фізніше URL
+            "extract_wz": "/documents/api/documents/pending/create/",# додати фізніше URL
         }
 
         if file and doc_type:
