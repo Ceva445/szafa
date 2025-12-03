@@ -77,6 +77,25 @@ class ReceiptDocument(DocumentBase):
         return self.document_number
 
 
+class PendingReceiptDocument(models.Model):
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, blank=True, null=True)
+    recipient = models.ForeignKey(Company, on_delete=models.SET_NULL, blank=True, null=True)
+    #TODO використати потім для звітів 
+    issue_date = models.DateField(blank=True, null=True)
+    delivery_date = models.DateField(blank=True, null=True)
+
+    reference_number = models.CharField(max_length=255, blank=True, null=True)
+    document_number = models.CharField(max_length=255, blank=True, null=True)
+
+    #raw_json = models.JSONField()  # повний вхідний документ
+
+    approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[PENDING] {self.document_number or 'NO-NUMBER'}"
+
+
 class DocumentItem(models.Model):
     ITEM_STATUS = [
         ("active", "Aktywny"),
@@ -168,3 +187,21 @@ class ReceiptItem(models.Model):
 
     def __str__(self):
         return f"{self.product} - {self.quantity}"
+
+
+class PendingReceiptItem(models.Model):
+    document = models.ForeignKey(
+        PendingReceiptDocument, on_delete=models.CASCADE, related_name="items"
+    )
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    quantity_ordered = models.IntegerField(default=0)
+    quantity_delivered = models.IntegerField(default=0)
+
+    size = models.CharField(max_length=50, blank=True, null=True)
+    #TODO Якщо продукт ще не створений в системі викоритати для стоврення нового пендінг продукту
+    description = models.TextField(blank=True)
+    code = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"[PENDING ITEM] {self.code}"

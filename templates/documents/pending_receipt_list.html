@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Dokumenty oczekujące{% endblock %}
+{% block page_title %}OBSŁUGA SYSTEMU — Dokumenty oczekujące{% endblock %}
+{% block active %}system{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3 style="margin-bottom:15px;">Tymczasowe dokumenty PZ</h3>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Numer</th>
+                <th>Dostawca</th>
+                <th>Odbiorca</th>
+                <th>Data dostawy</th>
+                <th>Linie</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td>
+                    <a href="{% url 'documents:pending_receipt_detail' doc.id %}">
+                        {{ doc.document_number|default:"(brak)" }}
+                    </a>
+                </td>
+
+                <td>{{ doc.supplier|default:"—" }}</td>
+
+                <td>{{ doc.recipient|default:"—" }}</td>
+
+                <td>{{ doc.delivery_date|default:"—" }}</td>
+
+                <td>{{ doc.items.count }}</td>
+
+                <td>
+                    <form method="post" action="{% url 'documents:pending_receipt_delete' doc.id %}">
+                        {% csrf_token %}
+                        <button class="btn small danger">🗑</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

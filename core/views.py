@@ -30,7 +30,7 @@ class InvoiceAnalyzeView(LoginRequiredMixin, View):
         doc_type = request.POST.get("doc_type")
         forward_url_map = {
             "extract_fv": "/core/api/products/pending/create/",
-            "extract_wz": "",# додати фізніше URL
+            "extract_wz": "/documents/api/documents/pending/create/",# додати фізніше URL
         }
 
         if file and doc_type:
@@ -334,7 +334,7 @@ class ProductDuplicateView(LoginRequiredMixin, View):
 
 
 class PendingProductListView(View):
-    template_name = "core/pending_list.html"
+    template_name = "core/pending_products_list.html"
 
     def get(self, request):
         objects = PendingProduct.objects.order_by("-created_at")
