@@ -32,6 +32,8 @@ class WarehouseListView(LoginRequiredMixin, View):
 
         if not show_zero:
             qs = qs.filter(quantity__gt=0)
+        else:
+            qs = qs.filter(quantity__lte=0)
 
         # simple pagination
         paginator = Paginator(qs.order_by("product__code", "size"), 50)
