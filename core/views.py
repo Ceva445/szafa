@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.urls import reverse
 from django.contrib import messages
+
+from core.utils import replace_pending_products_safe
 from .models import Company, Department, PendingProduct, Position, ProductCategory, Supplier, Product
 from .forms import (
     CompanyForm,
@@ -30,7 +32,7 @@ class InvoiceAnalyzeView(LoginRequiredMixin, View):
         doc_type = request.POST.get("doc_type")
         forward_url_map = {
             "extract_fv": "/core/api/products/pending/create/",
-            "extract_wz": "/documents/api/documents/pending/create/",# додати фізніше URL
+            "extract_wz": "/documents/api/documents/pending/create/",
         }
 
         if file and doc_type:
@@ -371,6 +373,7 @@ class PendingProductListView(View):
                 ))
 
             Product.objects.bulk_create(new_products)
+            replace_pending_products_safe()
             qs.delete()
 
             messages.success(request, f"Zatwierdzono {len(new_products)} produktów.")
@@ -378,6 +381,7 @@ class PendingProductListView(View):
 
         if action == "delete":
             count = qs.count()
+            replace_pending_products_safe()
             qs.delete()
             messages.success(request, f"Usunięto {count} pozycji.")
             return redirect("core:pending_list")
@@ -399,7 +403,7 @@ class PendingProductApproveView(View):
             period_days=item.period_days,
             description=item.description,
         )
-        
+        replace_pending_products_safe()
         item.delete()
         messages.success(request, f"Produkt {item.code} został zatwierdzony.")
         return redirect("core:pending_list")
@@ -407,6 +411,7 @@ class PendingProductApproveView(View):
 
 class PendingProductDeleteView(View):
     def post(self, request, pk):
+        replace_pending_products_safe()
         item = get_object_or_404(PendingProduct, pk=pk)
         item.delete()
         messages.success(request, "Usunięto rekord.")

@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
+from .models import (
+    IssueDocument, 
+    PendingReceiptDocument, 
+    PendingReceiptItem, 
+    ReceiptDocument, 
+    DocumentItem, 
+    ReceiptItem,
+    InvoiceDocument,
+    InvoiceLineItem
+)
 
 
 class DocumentItemInline(admin.TabularInline):
@@ -100,3 +109,24 @@ class PendingReceiptItemAdmin(admin.ModelAdmin):
     list_filter = ["product__category"]
     search_fields = ["document__document_number", "product__code", "product__name"]
     #readonly_fields = ["total_value"]   
+
+@admin.register(InvoiceDocument)
+class InvoiceDocumentAdmin(admin.ModelAdmin):
+    list_display = [
+        "order_number",
+    ]
+    search_fields = ["order_number"]
+
+@admin.register(InvoiceLineItem)
+class InvoiceLineItemAdmin(admin.ModelAdmin):
+    list_display = [
+        "document__order_number",
+        "product",
+        "code",
+        "pending_product",
+        "quantity_ordered",
+        "quantity_delivered",
+        "date_recieved",
+    ]
+    list_filter = ["document"]
+    search_fields = ["document__order_number", "product__code", "pending_product__code"]

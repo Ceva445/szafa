@@ -1,6 +1,6 @@
 from datetime import date
 from django.db import models
-from core.models import Product, Supplier, Company
+from core.models import PendingProduct, Product, Supplier, Company
 from employees.models import Employee
 
 
@@ -205,3 +205,31 @@ class PendingReceiptItem(models.Model):
 
     def __str__(self):
         return f"[PENDING ITEM] {self.code}"
+    
+
+class InvoiceDocument(models.Model):
+    order_number = models.CharField(max_length=255, blank=True, null=True)
+
+
+class InvoiceLineItem(models.Model):
+    document = models.ForeignKey(
+        InvoiceDocument, on_delete=models.CASCADE, related_name="line_items"
+    )
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
+    code = models.CharField(max_length=50, blank=True, null=True)
+    pending_product = models.ForeignKey(PendingProduct, on_delete=models.SET_NULL, null=True, blank=True)
+    date_recieved = models.DateField(blank=True, null=True)
+    quantity_ordered = models.IntegerField(default=0)
+    quantity_delivered = models.IntegerField(default=0)
+
+    def __str__(self):
+        if self.product:
+            return f"[INVOICE ITEM] {self.product.code}"
+        elif self.pending_product:
+            return f"[INVOICE ITEM] {self.pending_product.code}"
+        else:
+            return f"[INVOICE ITEM] No product assigned (ID: {self.id})"
+
+
+
+
