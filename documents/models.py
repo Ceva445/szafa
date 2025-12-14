@@ -92,6 +92,8 @@ class PendingReceiptDocument(models.Model):
     approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    order_number = models.CharField(max_length=255, blank=True, null=True)
+
     def __str__(self):
         return f"[PENDING] {self.document_number or 'NO-NUMBER'}"
 

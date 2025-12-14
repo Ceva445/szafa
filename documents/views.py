@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q, Prefetch
 from datetime import datetime, date
 
-from .models import IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
+from .models import InvoiceLineItem, IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
 from core.models import Product, Supplier, Company
 from employees.models import Employee
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -827,6 +827,7 @@ class PendingReceiptDetailView(View):
             PendingReceiptItem.objects.filter(id__in=to_delete).delete()
 
         if "approve" in post:
+            invoice_raws = InvoiceLineItem.objects.filter(document__order_number=doc.order_number)
             issue_date = doc.delivery_date or date.today()
             new_doc = ReceiptDocument.objects.create(
                 supplier=doc.supplier,
@@ -835,11 +836,17 @@ class PendingReceiptDetailView(View):
             )
 
             receipt_items = []
+            invoice_items_to_update = []
             for item in doc.items.select_related("product").all():
                 if not item.product:
                     continue
                 unit_price = item.product.unit_price or 0
                 qty = item.quantity_delivered or 0
+
+                invoice_raw = invoice_raws.filter(product__code=item.product.code).first()
+                invoice_raw.quantity_delivered += qty
+                invoice_items_to_update.append(invoice_raw)
+
                 receipt_items.append(ReceiptItem(
                     document=new_doc,
                     product=item.product,
@@ -853,6 +860,11 @@ class PendingReceiptDetailView(View):
             if receipt_items:
                 ReceiptItem.objects.bulk_create(receipt_items)
 
+            if invoice_items_to_update:
+                InvoiceLineItem.objects.bulk_update(
+                    invoice_items_to_update,
+                    fields=["quantity_delivered"]
+                )
             doc.items.all().delete()
             doc.delete()
 
