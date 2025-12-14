@@ -358,9 +358,20 @@ class PendingProductListView(View):
 
         if action == "approve":
             items = list(qs)
+
+            pending_codes = [item.code for item in items]
+            existing_products = Product.objects.filter(
+                code__in=pending_codes
+            ).values_list('code', flat=True)
+            existing_codes_set = set(existing_products)
+            print("Existing codes:", existing_codes_set)
             new_products = []
 
             for item in items:
+                if request.POST.get(f"code_{item.id}") in existing_codes_set:
+                    print(f"Skipping duplicate code: {request.POST.get(f'code_{item.id}')}")
+                    continue
+
                 new_products.append(Product(
                     code=request.POST.get(f"code_{item.id}"),
                     name=request.POST.get(f"name_{item.id}"),
@@ -393,6 +404,11 @@ class PendingProductListView(View):
 class PendingProductApproveView(View):
     def post(self, request, pk):
         item = get_object_or_404(PendingProduct, pk=pk)
+        
+        if Product.objects.filter(code=item.code).exists():
+            messages.error(request, f"Produkt o kodzie {item.code} już istnieje. Nie można zatwierdzić duplikatu.")
+            return redirect("core:pending_list")
+        
         Product.objects.create(
             code=item.code,
             name=item.name,
