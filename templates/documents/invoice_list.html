@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block page_title %}Faktury{% endblock %}
+{% block page_subtitle %}Lista faktur{% endblock %}
+
+{% block content %}
+<div class="card filter-section">
+  <form method="get" class="filter-grid">
+    <div class="filter-group">
+      <label>Numer faktury</label>
+      <input type="text" name="number" value="{{ number }}">
+    </div>
+
+    <div class="filter-group">
+      <label>Data od</label>
+      <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+
+    <div class="filter-group">
+      <label>Data do</label>
+      <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn primary">Filtruj</button>
+      <a href="{% url 'documents:invoice_list' %}" class="btn ghost">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card table-container">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nr faktury</th>
+        <th>Data</th>
+        <th>Pozycje</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in invoices %}
+      <tr>
+        <td>
+          <a href="{% url 'documents:invoice_detail' i.id %}">
+            {{ i.order_number }}
+          </a>
+        </td>
+        <td>{{ i.created_at|date:"Y-m-d" }}</td>
+        <td>{{ i.line_items.count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">Brak faktur</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

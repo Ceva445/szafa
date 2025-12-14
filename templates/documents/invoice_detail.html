@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block page_title %}Faktura {{ invoice.order_number }}{% endblock %}
+{% block page_subtitle %}Szczegóły faktury{% endblock %}
+
+{% block content %}
+<div class="card">
+  <p><strong>Numer:</strong> {{ invoice.order_number }}</p>
+  <p><strong>Data:</strong> {{ invoice.created_at|date:"Y-m-d" }}</p>
+</div>
+
+<div class="card table-container">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Kod</th>
+        <th>Produkt</th>
+        <th>Ilość zam.</th>
+        <th>Ilość dost.</th>
+        <th>Data przyjęcia</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item.code }}</td>
+        <td>
+          {% if item.product %}
+            {{ item.product.name }}
+          {% else %}
+            {{ item.pending_product.name }}
+          {% endif %}
+        </td>
+        <td>{{ item.quantity_ordered }}</td>
+        <td>{{ item.quantity_delivered }}</td>
+        <td>{{ item.date_recieved }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5">Brak pozycji</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.db.models import Q, Prefetch
 from datetime import datetime, date
 
-from .models import InvoiceLineItem, IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
+from .models import InvoiceDocument, InvoiceLineItem, IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
 from core.models import Product, Supplier, Company
 from employees.models import Employee
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -872,3 +872,49 @@ class PendingReceiptDetailView(View):
             return redirect("documents:pending_receipt_list")
 
         return redirect("documents:pending_receipt_detail", pk=pk)
+
+
+# =====================================================
+# =============== INVOICE VIEWS ======================= 
+# =====================================================
+
+class InvoiceListView(LoginRequiredMixin, View):
+    def get(self, request):
+        qs = InvoiceDocument.objects.all().order_by("-id")
+
+        number = request.GET.get("number")
+        date_from = request.GET.get("date_from")
+        date_to = request.GET.get("date_to")
+
+        if number:
+            qs = qs.filter(order_number__icontains=number)
+
+        if date_from:
+            qs = qs.filter(line_items__date_recieved__gte=date_from)
+
+        if date_to:
+            qs = qs.filter(line_items__date_recieved__lte=date_to)
+
+        context = {
+            "invoices": qs,
+            "number": number,
+            "date_from": date_from,
+            "date_to": date_to,
+            "active": "system",
+        }
+        return render(request, "documents/invoice_list.html", context)
+    
+
+class InvoiceDetailView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        invoice = get_object_or_404(InvoiceDocument, pk=pk)
+        items = invoice.line_items.select_related(
+            "product", "pending_product"
+        )
+
+        context = {
+            "invoice": invoice,
+            "items": items,
+            "active": "system",
+        }
+        return render(request, "documents/invoice_detail.html", context)
