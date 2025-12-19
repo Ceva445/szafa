@@ -40,12 +40,15 @@
 
     <div id="items">
       {% if items %}
-        {% for pid, qty, size, price, note in items %}
+        {% for pid, qty, size, price, note, stock_qty in items %}
           <div class="item-row" data-index="{{ forloop.counter0 }}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
             <select name="product_id[]" class="product-select">
               <option value="">-- produkt --</option>
               {% for p in products %}
-                <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}"
+                <option value="{{ p.id }}" 
+                        data-size="{{ p.size|default:'' }}" 
+                        data-price="{{ p.unit_price }}"
+                        data-stock-qty="{{ p.stock_qty }}"
                   {% if p.id|stringformat:"s" == pid %}selected{% endif %}>
                   {{ p.code }} — {{ p.name }}
                 </option>
@@ -54,16 +57,21 @@
             <input name="quantity[]" class="small" placeholder="Ilość" value="{{ qty }}" />
             <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly value="{{ size }}" />
             <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly value="{{ price }}" />
+            <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly value="{{ stock_qty }}" />
             <input name="notes[]" class="small" placeholder="Uwagi" value="{{ note }}" />
             <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
           </div>
         {% endfor %}
       {% else %}
+        <!-- Перший ряд за замовчуванням -->
         <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
           <select name="product_id[]" class="product-select">
             <option value="">-- produkt --</option>
             {% for p in products %}
-              <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}">
+              <option value="{{ p.id }}"
+                      data-size="{{ p.size|default:'' }}"
+                      data-price="{{ p.unit_price }}"
+                      data-stock-qty="{{ p.stock_qty }}">
                 {{ p.code }} — {{ p.name }}
               </option>
             {% endfor %}
@@ -71,6 +79,7 @@
           <input name="quantity[]" class="small" placeholder="Ilość" />
           <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
           <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
+          <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly />
           <input name="notes[]" class="small" placeholder="Uwagi" />
           <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
         </div>
@@ -90,19 +99,23 @@ function updateProductFields(selectElement) {
   const row = selectElement.closest('.item-row');
   const sizeField = row.querySelector('.size-field');
   const priceField = row.querySelector('.price-field');
+  const stockField = row.querySelector('.stock-field');
   
   const selectedOption = selectElement.options[selectElement.selectedIndex];
   
   if (selectedOption && selectedOption.value) {
     const size = selectedOption.getAttribute('data-size') || '';
     const price = selectedOption.getAttribute('data-price') || '';
+    const stockQty = selectedOption.getAttribute('data-stock-qty') || '0';
     
     sizeField.value = size;
     priceField.value = price;
+    stockField.value = stockQty;
   } else {
     // Якщо продукт не вибрано - очищаємо поля
     sizeField.value = '';
     priceField.value = '';
+    stockField.value = '';
   }
 }
 
@@ -119,7 +132,10 @@ function addRow(){
     <select name="product_id[]" class="product-select">
       <option value="">-- produkt --</option>
       {% for p in products %}
-        <option value="{{ p.id }}" data-size="{{ p.size|default:'' }}" data-price="{{ p.unit_price }}">
+        <option value="{{ p.id }}" 
+                data-size="{{ p.size|default:'' }}" 
+                data-price="{{ p.unit_price }}"
+                data-stock-qty="{{ p.stock_qty }}">
           {{ p.code }} — {{ p.name }}
         </option>
       {% endfor %}
@@ -127,6 +143,7 @@ function addRow(){
     <input name="quantity[]" class="small" placeholder="Ilość" />
     <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
     <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
+    <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly />
     <input name="notes[]" class="small" placeholder="Uwagi" />
     <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
   `; 

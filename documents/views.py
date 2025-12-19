@@ -3,7 +3,7 @@ from django.views import View
 from django.urls import reverse
 from django.db import transaction
 from django.contrib import messages
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Sum
 from datetime import datetime, date
 
 from .models import InvoiceDocument, InvoiceLineItem, IssueDocument, PendingReceiptDocument, PendingReceiptItem, ReceiptDocument, DocumentItem, ReceiptItem
@@ -68,9 +68,15 @@ class IssueCreateView(LoginRequiredMixin, View):
 
     def get(self, request):
         employee_id = request.GET.get("employee")
+        products = (
+            Product.objects
+            .filter(warehousestock__quantity__gt=0)
+            .annotate(stock_qty=Sum("warehousestock__quantity"))
+            .distinct()
+        )
         context = {
             "employees": Employee.objects.select_related("position", "company").all(),
-            "products": Product.objects.filter(warehousestock__quantity__gt=0).distinct(),
+            "products": products,
             "active": "documents_dw",
             "today": date.today().isoformat(),
             "items": [],
@@ -87,8 +93,9 @@ class IssueCreateView(LoginRequiredMixin, View):
         sizes = request.POST.getlist("size[]")
         unit_prices = request.POST.getlist("unit_price[]")
         notes = request.POST.getlist("notes[]")
+        stock_quantities = request.POST.getlist("stock_qty[]")
 
-        items_parsed = list(zip(product_ids, quantities, sizes, unit_prices, notes))
+        items_parsed = list(zip(product_ids, quantities, sizes, unit_prices, notes, stock_quantities))
 
         errors = {}
         item_errors = []
@@ -98,7 +105,7 @@ class IssueCreateView(LoginRequiredMixin, View):
         if not issue_date:
             errors["issue_date"] = "Podaj datę wystawienia"
 
-        for i, (pid, qty_raw, size, unit_price, note) in enumerate(items_parsed):
+        for i, (pid, qty_raw, size, unit_price, note, stock_qty) in enumerate(items_parsed):
             line_number = i + 1
             pid = pid.strip()
             qty_raw = qty_raw.strip()
@@ -115,10 +122,10 @@ class IssueCreateView(LoginRequiredMixin, View):
                 if qty <= 0:
                     raise ValueError
             except Exception:
-                item_errors.append(f"W pozycji {line_number}: niepoprawna ilość („{qty_raw}”).")
+                item_errors.append(f"W pozycji {line_number}: niepoprawna ilość.")
                 continue
 
-            items_parsed[i] = (pid, qty, size.strip(), unit_price.strip(), note.strip())
+            items_parsed[i] = (pid, qty, size.strip(), unit_price.strip(), note.strip(), stock_qty.strip())
 
         if not any(pid for pid, *_ in items_parsed):
             errors["items"] = "Dodaj przynajmniej jedną poprawną pozycję"
@@ -144,7 +151,7 @@ class IssueCreateView(LoginRequiredMixin, View):
                     issue_date=issue_date,
                     employee_id=employee_id,
                 )
-                for pid, qty, size, unit_price, note in items_parsed:
+                for pid, qty, size, unit_price, note, stock_qty in items_parsed:
                     if not pid:
                         continue
                     product = Product.objects.get(pk=pid)
