@@ -49,7 +49,7 @@
           <td>{{ s.product.min_qty_on_stock }}</td>
           <td class="actions">
             <a class="btn small ghost" href="{% url 'warehouse:detail' s.pk %}">Akcje</a>
-            <!-- <a class="btn small" href="{% url 'documents:create_pz' %}?product_id={{ s.product.pk }}&size={{ s.size|urlencode }}">Dodaj PZ</a> -->
+            <a class="btn small" href="{% url 'warehouse:stock_correction' s.pk %}" title="Korekta stanu magazynowego">✏️</a>
             <a class="btn small ghost" href="{% url 'warehouse:history' s.pk %}">Historia</a>
           </td>
         </tr>
