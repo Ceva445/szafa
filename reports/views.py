@@ -1,3 +1,4 @@
+from urllib import request
 from django.views import View
 from django.shortcuts import render
 from django.db.models import Q, Sum, F
@@ -5,7 +6,7 @@ from datetime import datetime, date, timedelta
 from employees.models import Employee, EmploymentPeriod
 from documents.models import IssueDocument, DocumentItem, ReceiptDocument, ReceiptItem
 from core.models import Company, Department, Supplier, Product
-from warehouse.models import WarehouseStock
+from warehouse.models import StockMovement, WarehouseStock
 from .utils import export_to_excel, export_to_pdf
 
 
@@ -32,6 +33,8 @@ class ReportsView(View):
             return self.render_receipts_report(request, context)
         elif report_type == "order_demand":
             return self.render_order_demand_report(request, context)
+        elif report_type == "stock_correction":
+            return self.render_stock_correction_report(request, context)
         else:
             # Якщо звіт не вибрано, показуємо інструкцію
             return render(request, "reports/reports_base.html", context)
@@ -422,6 +425,71 @@ class ReportsView(View):
         elif output_format == "pdf":
             return export_to_pdf(
                 data, columns, title="Raport przyjęć", filename="raport_przyjec.pdf"
+            )
+
+        return render(request, "reports/reports_base.html", context)
+
+    def render_stock_correction_report(self, request, context):
+        """Рендеринг звіту korekty stanu magazynowego"""
+        date_from = request.GET.get("date_from", "")
+        date_to = request.GET.get("date_to", "")
+        product_id = request.GET.get("product", "")
+        output_format = request.GET.get("output", "screen")
+
+        # Фільтруємо StockMovement по типу 'stock_correction'
+        stock_movements = StockMovement.objects.filter(
+            movement_type="stock_correction"
+        ).select_related("product")
+
+        if date_from:
+            stock_movements = stock_movements.filter(movement_date__gte=date_from)
+        if date_to:
+            stock_movements = stock_movements.filter(movement_date__lte=date_to)
+        if product_id:
+            stock_movements = stock_movements.filter(product_id=product_id)
+
+        context.update({
+            "stock_movements": stock_movements,
+            "filters": {
+                "date_from": date_from,
+                "date_to": date_to,
+                "product": product_id,
+                "output": output_format,
+            },
+        })
+
+        # Підготовка даних для експорту
+        data = [
+            [
+                item.product.code if item.product else "-",
+                item.product.name if item.product else "-",
+                item.size or "-",
+                item.quantity,
+                item.notes or "-",
+                item.movement_date.strftime("%Y-%m-%d %H:%M"),
+                item.document_number or "-",
+            ]
+            for item in stock_movements
+        ]
+
+        columns = [
+            "Kod produktu",
+            "Nazwa produktu",
+            "Rozmiar",
+            "Ilość",
+            "Uwagi",
+            "Data korekty",
+            "Nr dokumentu",
+        ]
+
+        if output_format == "xls":
+            return export_to_excel(data, columns, filename="raport_korekta_stanu.xlsx")
+        elif output_format == "pdf":
+            return export_to_pdf(
+                data,
+                columns,
+                title="Raport korekty stanu magazynowego",
+                filename="raport_korekta_stanu.pdf",
             )
 
         return render(request, "reports/reports_base.html", context)

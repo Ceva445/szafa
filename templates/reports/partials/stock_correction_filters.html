@@ -1,0 +1,41 @@
+<div class="card">
+    <h3>Filtry raportu korekty stanu magazynowego</h3>
+    
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label for="product">Produkt</label>
+            <select name="product" id="product">
+                <option value="">Wszystkie</option>
+                {% for p in products %}
+                    <option value="{{ p.id }}" {% if filters.product == p.id|stringformat:"i" %}selected{% endif %}>
+                        {{ p.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="date_from">Data od</label>
+            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}">
+        </div>
+        
+        <div class="filter-group">
+            <label for="date_to">Data do</label>
+            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}">
+        </div>
+        
+        <div class="filter-group">
+            <label for="output">Forma wyświetlania</label>
+            <select name="output" id="output">
+                <option value="screen" {% if filters.output == 'screen' %}selected{% endif %}>Na Ekran</option>
+                <option value="xls" {% if filters.output == 'xls' %}selected{% endif %}>XLS</option>
+                <option value="pdf" {% if filters.output == 'pdf' %}selected{% endif %}>PDF</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="filter-actions">
+        <button type="submit" class="btn primary">Generuj raport</button>
+        <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść filtry</button>
+    </div>
+</div>
