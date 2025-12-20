@@ -22,6 +22,7 @@ class ReportsView(View):
             "companies": Company.objects.all(),
             "departments": Department.objects.all(),
             "suppliers": Supplier.objects.all(),
+            "products": Product.objects.all(),
         }
 
         # Відображення відповідного звіту в залежності від вибору

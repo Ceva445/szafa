@@ -1,41 +1,85 @@
 <div class="card">
     <h3>Filtry raportu korekty stanu magazynowego</h3>
-    
+
     <div class="filter-grid">
         <div class="filter-group">
             <label for="product">Produkt</label>
-            <select name="product" id="product">
+            <select name="product" id="product" class="product-select">
                 <option value="">Wszystkie</option>
                 {% for p in products %}
-                    <option value="{{ p.id }}" {% if filters.product == p.id|stringformat:"i" %}selected{% endif %}>
-                        {{ p.name }}
+                    <option value="{{ p.id }}"
+                        {% if filters.product == p.id|stringformat:"s" %}selected{% endif %}>
+                        {{ p.code }} — {{ p.name }}
                     </option>
                 {% endfor %}
             </select>
         </div>
-        
+
         <div class="filter-group">
             <label for="date_from">Data od</label>
-            <input type="date" name="date_from" id="date_from" value="{{ filters.date_from }}">
+            <input
+                type="date"
+                name="date_from"
+                id="date_from"
+                value="{{ filters.date_from }}"
+            >
         </div>
-        
+
         <div class="filter-group">
             <label for="date_to">Data do</label>
-            <input type="date" name="date_to" id="date_to" value="{{ filters.date_to }}">
+            <input
+                type="date"
+                name="date_to"
+                id="date_to"
+                value="{{ filters.date_to }}"
+            >
         </div>
-        
+
         <div class="filter-group">
             <label for="output">Forma wyświetlania</label>
             <select name="output" id="output">
-                <option value="screen" {% if filters.output == 'screen' %}selected{% endif %}>Na Ekran</option>
-                <option value="xls" {% if filters.output == 'xls' %}selected{% endif %}>XLS</option>
-                <option value="pdf" {% if filters.output == 'pdf' %}selected{% endif %}>PDF</option>
+                <option value="screen" {% if filters.output == 'screen' %}selected{% endif %}>
+                    Na Ekran
+                </option>
+                <option value="xls" {% if filters.output == 'xls' %}selected{% endif %}>
+                    XLS
+                </option>
+                <option value="pdf" {% if filters.output == 'pdf' %}selected{% endif %}>
+                    PDF
+                </option>
             </select>
         </div>
     </div>
-    
+
     <div class="filter-actions">
         <button type="submit" class="btn primary">Generuj raport</button>
-        <button type="button" class="btn ghost" onclick="clearFilters()">Wyczyść filtry</button>
+        <button type="button" class="btn ghost" onclick="clearFilters()">
+            Wyczyść filtry
+        </button>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const productSelect = document.querySelector('.product-select');
+
+    if (productSelect) {
+        $(productSelect).select2({
+            placeholder: "Wszystkie",
+            allowClear: true,
+            width: '100%'
+        });
+    }
+});
+
+function clearFilters() {
+    const form = document.querySelector('form');
+    if (!form) return;
+
+    // reset standard fields
+    form.reset();
+
+    // reset select2
+    $('.product-select').val(null).trigger('change');
+}
+</script>
