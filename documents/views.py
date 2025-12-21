@@ -835,6 +835,7 @@ class PendingReceiptDetailView(View):
 
         if "approve" in post:
             invoice_raws = InvoiceLineItem.objects.filter(document__order_number=doc.order_number)
+            print(f"Approving document {doc.pk}, found {invoice_raws.count()} matching invoice items.")
             issue_date = doc.delivery_date or date.today()
             new_doc = ReceiptDocument.objects.create(
                 supplier=doc.supplier,
@@ -849,9 +850,10 @@ class PendingReceiptDetailView(View):
                     continue
                 unit_price = item.product.unit_price or 0
                 qty = item.quantity_delivered or 0
-
                 invoice_raw = invoice_raws.filter(product__code=item.product.code).first()
                 invoice_raw.quantity_delivered += qty
+                invoice_raw.date_recieved = date.today()
+                print(f"Updating invoice item {invoice_raw.pk}: new delivered qty = {invoice_raw.quantity_delivered} date_recieved = {invoice_raw.date_recieved}")
                 invoice_items_to_update.append(invoice_raw)
 
                 receipt_items.append(ReceiptItem(
@@ -868,9 +870,10 @@ class PendingReceiptDetailView(View):
                 ReceiptItem.objects.bulk_create(receipt_items)
 
             if invoice_items_to_update:
+                print(f"Updating {len(invoice_items_to_update)} invoice items' delivered quantities.")
                 InvoiceLineItem.objects.bulk_update(
                     invoice_items_to_update,
-                    fields=["quantity_delivered"]
+                    fields=["quantity_delivered", "date_recieved"]
                 )
             doc.items.all().delete()
             doc.delete()

@@ -4,9 +4,16 @@
 {% block page_subtitle %}Szczegóły faktury{% endblock %}
 
 {% block content %}
+
+<style>
+  .row-warning {
+    background-color: #f8d7da; /* червонуватий фон */
+  }
+</style>
+
 <div class="card">
   <p><strong>Numer:</strong> {{ invoice.order_number }}</p>
-  <p><strong>Data:</strong> {{ invoice.created_at|date:"Y-m-d" }}</p>
+  <!-- <p><strong>Data:</strong> {{ invoice.created_at|date:"Y-m-d" }}</p> -->
 </div>
 
 <div class="card table-container">
@@ -22,7 +29,7 @@
     </thead>
     <tbody>
       {% for item in items %}
-      <tr>
+      <tr class="{% if item.quantity_ordered != item.quantity_delivered %}row-warning{% endif %}">
         <td>{{ item.code }}</td>
         <td>
           {% if item.product %}
@@ -36,9 +43,12 @@
         <td>{{ item.date_recieved }}</td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">Brak pozycji</td></tr>
+      <tr>
+        <td colspan="5">Brak pozycji</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
 {% endblock %}

@@ -33,7 +33,7 @@
     <thead>
       <tr>
         <th>Nr faktury</th>
-        <th>Data</th>
+        <!-- <th>Data</th> -->
         <th>Pozycje</th>
       </tr>
     </thead>
@@ -45,7 +45,7 @@
             {{ i.order_number }}
           </a>
         </td>
-        <td>{{ i.created_at|date:"Y-m-d" }}</td>
+        <!-- <td>{{ i.created_at|date:"Y-m-d" }}</td> -->
         <td>{{ i.line_items.count }}</td>
       </tr>
       {% empty %}
