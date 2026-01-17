@@ -11,7 +11,7 @@
           <option value="">-- wybierz --</option>
           {% for e in employees %}
             <option value="{{ e.id }}" 
-                  {% if request.POST.employee == e.id|stringformat:"s" or selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
+              {% if request.POST.employee == e.id|stringformat:"s" or selected_employee == e.id|stringformat:"s" %}selected{% endif %}>
               {{ e.last_name }} {{ e.first_name }} ({{ e.card_number }})
             </option>
           {% endfor %}
@@ -49,12 +49,19 @@
                         data-size="{{ p.size|default:'' }}" 
                         data-price="{{ p.unit_price }}"
                         data-stock-qty="{{ p.stock_qty }}"
-                  {% if p.id|stringformat:"s" == pid %}selected{% endif %}>
+                        {% if p.id|stringformat:"s" == pid %}selected{% endif %}>
                   {{ p.code }} — {{ p.name }}
                 </option>
               {% endfor %}
             </select>
-            <input name="quantity[]" class="small" placeholder="Ilość" value="{{ qty }}" />
+
+            <input name="quantity[]"
+                   type="number"
+                   min="1"
+                   class="small quantity-field"
+                   placeholder="Ilość"
+                   value="{{ qty }}" />
+
             <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly value="{{ size }}" />
             <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly value="{{ price }}" />
             <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly value="{{ stock_qty }}" />
@@ -63,7 +70,6 @@
           </div>
         {% endfor %}
       {% else %}
-        <!-- Перший ряд за замовчуванням -->
         <div class="item-row" data-index="0" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
           <select name="product_id[]" class="product-select">
             <option value="">-- produkt --</option>
@@ -76,7 +82,11 @@
               </option>
             {% endfor %}
           </select>
-          <input name="quantity[]" class="small" placeholder="Ilość" />
+          <input name="quantity[]"
+                 type="number"
+                 min="1"
+                 class="small quantity-field"
+                 placeholder="Ilość" />
           <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
           <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
           <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly />
@@ -100,53 +110,60 @@ function updateProductFields(selectElement) {
   const sizeField = row.querySelector('.size-field');
   const priceField = row.querySelector('.price-field');
   const stockField = row.querySelector('.stock-field');
-  
+  const qtyField = row.querySelector('.quantity-field');
+
   const selectedOption = selectElement.options[selectElement.selectedIndex];
-  
+
   if (selectedOption && selectedOption.value) {
     const size = selectedOption.getAttribute('data-size') || '';
     const price = selectedOption.getAttribute('data-price') || '';
-    const stockQty = selectedOption.getAttribute('data-stock-qty') || '0';
-    
+    const stockQty = selectedOption.getAttribute('data-stock-qty') || '';
+
     sizeField.value = size;
     priceField.value = price;
     stockField.value = stockQty;
+
+    qtyField.setAttribute('max', stockQty);
   } else {
-    // Якщо продукт не вибрано - очищаємо поля
     sizeField.value = '';
     priceField.value = '';
     stockField.value = '';
+    qtyField.removeAttribute('max');
   }
 }
 
 function addRow(){
   const container = document.getElementById('items');
   const index = container.children.length;
-  
+
   const newRow = document.createElement('div');
   newRow.className = 'item-row';
   newRow.setAttribute('data-index', index);
   newRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:6px;';
-  
+
   newRow.innerHTML = `
     <select name="product_id[]" class="product-select">
       <option value="">-- produkt --</option>
       {% for p in products %}
-        <option value="{{ p.id }}" 
-                data-size="{{ p.size|default:'' }}" 
+        <option value="{{ p.id }}"
+                data-size="{{ p.size|default:'' }}"
                 data-price="{{ p.unit_price }}"
                 data-stock-qty="{{ p.stock_qty }}">
           {{ p.code }} — {{ p.name }}
         </option>
       {% endfor %}
     </select>
-    <input name="quantity[]" class="small" placeholder="Ilość" />
+    <input name="quantity[]"
+           type="number"
+           min="1"
+           class="small quantity-field"
+           placeholder="Ilość" />
     <input name="size[]" class="small size-field" placeholder="Rozmiar" readonly />
     <input name="unit_price[]" class="small price-field" placeholder="Cena" readonly />
     <input name="stock_qty[]" class="small stock-field" placeholder="Na stanie" readonly />
     <input name="notes[]" class="small" placeholder="Uwagi" />
     <button type="button" class="btn ghost small" onclick="removeRow(this)">Usuń</button>
-  `; 
+  `;
   container.appendChild(newRow);
 
   const productSelect = newRow.querySelector('.product-select');
