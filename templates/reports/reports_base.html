@@ -39,6 +39,10 @@
     {% elif report_type == 'order_demand' %}
         {% include "reports/partials/order_demand_filters.html" %}
         {% include "reports/partials/order_demand_results.html" %}
+
+    {% elif report_type == 'stock_correction' %}
+        {% include "reports/partials/stock_correction_filters.html" %}
+        {% include "reports/partials/stock_correction_results.html" %}
     
     {% else %}
         <div class="card">

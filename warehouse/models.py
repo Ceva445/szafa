@@ -34,11 +34,12 @@ class StockMovement(models.Model):
         ("out", "Wydanie"),
         ("adjustment", "Korekta"),
         ("return", "Zwrot"),
+        ("stock_correction ", "Korekta stanu magazynowego"),
     ]
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     size = models.CharField(max_length=20, blank=True, null=True)
-    movement_type = models.CharField(max_length=10, choices=MOVEMENT_TYPES)
+    movement_type = models.CharField(max_length=17, choices=MOVEMENT_TYPES)
     quantity = models.IntegerField()
     document_type = models.CharField(max_length=50)
     document_id = models.IntegerField()

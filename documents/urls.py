@@ -23,4 +23,7 @@ urlpatterns = [
     path("pending/", views.PendingReceiptListView.as_view(), name="pending_receipt_list"),
     path("pending/<int:pk>/", views.PendingReceiptDetailView.as_view(), name="pending_receipt_detail"),
     path("pending/delete/<int:pk>/", views.PendingReceiptDeleteView.as_view(), name="pending_receipt_delete"),
+
+    path("invoices/", views.InvoiceListView.as_view(), name="invoice_list"),
+    path("invoices/<int:pk>/", views.InvoiceDetailView.as_view(), name="invoice_detail"),
 ]

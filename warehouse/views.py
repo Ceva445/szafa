@@ -33,6 +33,12 @@ class WarehouseListView(LoginRequiredMixin, View):
         if not show_zero:
             qs = qs.filter(quantity__gt=0)
         else:
+            products_with_no_stock = Product.objects.exclude(
+                pk__in=WarehouseStock.objects.values_list('product_id', flat=True)
+            )
+            WarehouseStock.objects.bulk_create(
+                WarehouseStock(product=product, size=product.size, quantity=0) for product in products_with_no_stock
+            )
             qs = qs.filter(quantity__lte=0)
 
         # simple pagination
@@ -98,3 +104,52 @@ class StockHistoryView(LoginRequiredMixin, View):
             "active": "warehouse",
         }
         return render(request, "warehouse/history.html", context)
+    
+
+
+
+class StockCorrectionView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        ws = get_object_or_404(
+            WarehouseStock.objects.select_related("product"),
+            pk=pk
+        )
+
+        context = {
+            "stock": ws,
+            "active": "warehouse",
+        }
+        return render(request, "warehouse/stock_correction.html", context)
+
+    def post(self, request, pk):
+        ws = get_object_or_404(
+            WarehouseStock.objects.select_related("product"),
+            pk=pk
+        )
+
+        try:
+            new_quantity = int(request.POST.get("new_quantity"))
+        except (TypeError, ValueError):
+            new_quantity = ws.quantity
+
+        comment = request.POST.get("comment", "").strip()
+
+        quantity_change = new_quantity - ws.quantity
+        ws.update_stock(quantity_change)
+
+        notes = f"Korekta stanu do {new_quantity} przez {request.user.username}"
+        if comment:
+            notes += f" Komentarz: {comment}"
+
+        StockMovement.objects.create(
+            product=ws.product,
+            size=ws.size,
+            movement_type="stock_correction",
+            quantity=quantity_change,
+            document_type="Stock Correction",
+            document_id=0,
+            document_number="",
+            notes=notes,
+        )
+
+        return redirect(reverse("warehouse:detail", args=[ws.pk]))

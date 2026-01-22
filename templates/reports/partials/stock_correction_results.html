@@ -1,0 +1,40 @@
+{% if stock_movements %}
+<div class="card">
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Kod produktu</th>
+                    <th>Nazwa produktu</th>
+                    <th>Rozmiar</th>
+                    <th>Ilość</th>
+                    <th>Uwagi</th>
+                    <th>Data korekty</th>
+                    <th>Nr dokumentu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in stock_movements %}
+                <tr>
+                    <td>{{ item.product.code }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.size|default:"-" }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.notes|default:"-" }}</td>
+                    <td>{{ item.movement_date|date:"Y-m-d H:i" }}</td>
+                    <td>{{ item.document_number|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 16px; text-align: center;">
+        <p>Znaleziono {{ stock_movements.count }} rekordów</p>
+    </div>
+</div>
+{% elif request.GET %}
+<div class="card">
+    <p>Brak danych spełniających kryteria wyszukiwania.</p>
+</div>
+{% endif %}

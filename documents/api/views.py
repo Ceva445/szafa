@@ -3,11 +3,36 @@ from core.api.serializer import FlexibleInvoiceSerializer
 from core.models import Product, Supplier, Company
 from rest_framework import status, generics
 from django.db import transaction
+from datetime import datetime
  
 from documents.models import PendingReceiptDocument, PendingReceiptItem
 
 class PendingDocumentImportAPIView(generics.GenericAPIView):
     serializer_class = FlexibleInvoiceSerializer
+
+    def parse_date(self, date_str):
+        """Parse date from various formats to YYYY-MM-DD"""
+        if not date_str:
+            return None
+        
+        try:
+            # Try DD.MM.YYYY format
+            if '.' in date_str:
+                date_obj = datetime.strptime(date_str, "%d.%m.%Y")
+                return date_obj.date()
+            # Try YYYY-MM-DD format
+            elif '-' in date_str:
+                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                return date_obj.date()
+            # Try DD/MM/YYYY format
+            elif '/' in date_str:
+                date_obj = datetime.strptime(date_str, "%d/%m/%Y")
+                return date_obj.date()
+            else:
+                # return today if format is unrecognized
+                return datetime.today().date()
+        except (ValueError, TypeError):
+            return None
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -18,14 +43,19 @@ class PendingDocumentImportAPIView(generics.GenericAPIView):
         items = data.get("items", [])
         
         suplier_str = data.get("seller", {}).get("name", "").split()[0].lower()
+        
+        # Parse dates before creating the document
+        order_date = self.parse_date(data.get("dates", {}).get("order_date"))
+        delivery_date = self.parse_date(data.get("dates", {}).get("delivery_date"))
+        
         pending_doc = PendingReceiptDocument.objects.create(
             supplier=Supplier.objects.filter(name__iexact=suplier_str).first(),
             recipient=Company.objects.filter(name="Ceva 1").first(),
-            issue_date=data.get("dates", {}).get("order_date"),
-            delivery_date=data.get("dates", {}).get("delivery_date"),
+            issue_date=order_date,
+            delivery_date=delivery_date,
             reference_number=data.get("reference_number"),
             document_number=data.get("document_number"),
-            #raw_json=data,
+            order_number=data.get("order_number"),
         )
 
         pending_items = []
@@ -40,7 +70,7 @@ class PendingDocumentImportAPIView(generics.GenericAPIView):
                 PendingReceiptItem(
                     document=pending_doc,
                     code=code,
-                    name=item.get("name"),
+                    name=item.get("name", "") or "",
                     quantity_ordered=item.get("quantity_ordered") or 0,
                     quantity_delivered=item.get("quantity_delivered") or 0,
                     product=product, 
