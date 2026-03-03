@@ -1,3 +1,4 @@
+from PIL.Image import item
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
 from django.urls import reverse
@@ -855,22 +856,22 @@ class PendingReceiptDetailView(View):
                 qty = item.quantity_delivered or 0
                 invoice_raw = invoice_raws.filter(product__code=item.product.code).first()
                 # ifn invoice_raw is None than create receipt item without linking to invoice, otherwise link and update delivered quantity
-                if invoice_raw is None:
-                    invoice_doc, _ = InvoiceDocument.objects.get_or_create(
-                        order_number=doc.order_number
-                    )
+                if invoice_raw:
+                    # invoice_doc, _ = InvoiceDocument.objects.get_or_create(
+                    #     order_number=doc.order_number
+                    # )
 
-                    invoice_raw = InvoiceLineItem.objects.create(
-                        document=invoice_doc,  # ✅ poprawny typ
-                        product=item.product,
-                        quantity_ordered=0,
-                        quantity_delivered=qty,
-                    )
-                invoice_raw.quantity_delivered += qty
-                invoice_raw.date_recieved = date.today()
-                print(f"Updating invoice item {invoice_raw.pk}: new delivered qty = {invoice_raw.quantity_delivered} date_recieved = {invoice_raw.date_recieved}")
+                    # invoice_raw = InvoiceLineItem.objects.create(
+                    #     document=invoice_doc,  # ✅ poprawny typ
+                    #     product=item.product,
+                    #     quantity_ordered=0,
+                    #     quantity_delivered=qty,
+                    # )
+                    invoice_raw.quantity_delivered += qty
+                    invoice_raw.date_recieved = date.today()
+                    print(f"Updating invoice item {invoice_raw.pk}: new delivered qty = {invoice_raw.quantity_delivered} date_recieved = {invoice_raw.date_recieved}")
                 invoice_items_to_update.append(invoice_raw)
-
+                print(f"len recipt items: {len(receipt_items)}, len invoice items to update: {len(invoice_items_to_update)}")
                 receipt_items.append(ReceiptItem(
                     document=new_doc,
                     product=item.product,
@@ -880,16 +881,21 @@ class PendingReceiptDetailView(View):
                     total_value=unit_price * qty,
                     notes=getattr(item, "description", "") or "",
                 ))
+                print(f"len recipt items: {len(receipt_items)}, len invoice items to update: {len(invoice_items_to_update)}")
 
             if receipt_items:
-                ReceiptItem.objects.bulk_create(receipt_items)
+                for item in receipt_items:
+                    item.save()
 
             if invoice_items_to_update:
                 print(f"Updating {len(invoice_items_to_update)} invoice items' delivered quantities.")
-                InvoiceLineItem.objects.bulk_update(
-                    invoice_items_to_update,
-                    fields=["quantity_delivered", "date_recieved"]
-                )
+                # InvoiceLineItem.objects.bulk_update(
+                #     invoice_items_to_update,
+                #     fields=["quantity_delivered", "date_recieved"]
+                # )
+                for item in invoice_items_to_update:
+                    if item:
+                        item.save()
             doc.items.all().delete()
             doc.delete()
 
