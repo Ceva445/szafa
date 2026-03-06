@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.db import IntegrityError, transaction
 from django.contrib import messages
 from datetime import datetime
+
+from szafa.middleware import get_current_user
 from .models import Employee, EmploymentPeriod
 from core.models import Company, Position, Department
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -26,7 +28,7 @@ def parse_date_or_none(val):
 
 class EmployeesListView(LoginRequiredMixin, View):
     def get(self, request):
-        q = request.GET.get("q", "").strip()
+        q = request.GET.get("q", "").strip().lower()
         company_id = request.GET.get("company")
         position_id = request.GET.get("position")
 
@@ -36,12 +38,15 @@ class EmployeesListView(LoginRequiredMixin, View):
             qs = qs.filter(company_id=company_id)
         if position_id:
             qs = qs.filter(position_id=position_id)
+
         if q:
-            qs = qs.filter(
-                Q(card_number__icontains=q)
-                | Q(first_name__icontains=q)
-                | Q(last_name__icontains=q)
-            )
+            # Python-фільтрація по first_name / last_name
+            qs = [
+                e for e in qs
+                if q in e.card_number.lower()
+                or q in e.first_name.lower()
+                or q in e.last_name.lower()
+            ]
 
         context = {
             "employees": qs,
@@ -177,6 +182,7 @@ class EditEmployeeView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         emp = get_object_or_404(Employee, pk=pk)
+        user = get_current_user()
         card_number = request.POST.get("card_number", "").strip()
         first_name = request.POST.get("first_name", "").strip()
         last_name = request.POST.get("last_name", "").strip()
@@ -229,8 +235,8 @@ class EditEmployeeView(LoginRequiredMixin, View):
         try:
             with transaction.atomic():
                 emp.card_number = card_number
-                emp.first_name = first_name
-                emp.last_name = last_name
+                emp.safe_update_name("first_name", first_name, user)
+                emp.safe_update_name("last_name", last_name, user)
                 emp.position_id = position_id
                 emp.department_id = department_id
                 emp.company_id = company_id
