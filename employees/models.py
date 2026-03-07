@@ -3,12 +3,19 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from datetime import date
 from core.models import Company, Department, Position
+from szafa.crypto import decrypt_value
+from szafa.middleware import get_current_user
 
 
 class Employee(models.Model):
     card_number = models.CharField(max_length=20, unique=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    _first_name = models.TextField(
+        max_length=255,
+    )
+
+    _last_name = models.TextField(
+        max_length=255,
+    )
     position = models.ForeignKey(Position, on_delete=models.PROTECT)
     department = models.ForeignKey(Department, on_delete=models.PROTECT)
     company = models.ForeignKey(Company, on_delete=models.PROTECT)
@@ -16,6 +23,48 @@ class Employee(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.card_number})"
+
+    @property
+    def first_name(self):
+
+        user = get_current_user()
+
+        value = decrypt_value(self._first_name)
+
+        if user and getattr(user, "can_view_real_employee_names", False):
+            return value
+
+        return value[0] + "***"
+
+
+    @first_name.setter
+    def first_name(self, value):
+
+        from szafa.crypto import encrypt_value
+
+        self._first_name = encrypt_value(value)
+
+
+    @property
+    def last_name(self):
+
+        user = get_current_user()
+
+        value = decrypt_value(self._last_name)
+
+        if user and getattr(user, "can_view_real_employee_names", False):
+            return value
+
+        return value[0] + "***"
+
+
+    @last_name.setter
+    def last_name(self, value):
+
+        from szafa.crypto import encrypt_value
+
+        self._last_name = encrypt_value(value)
+
 
     def get_current_employment_period(self):
         """Returns the current period of employment of an employee"""
@@ -39,7 +88,18 @@ class Employee(models.Model):
         from documents.models import DocumentItem
 
         return DocumentItem.objects.filter(document__employee=self, status="used")
+    
+    def safe_update_name(self, field_name: str, new_value: str, user=None):
+        """Update encrypted name only if user can view or реально змінив значення"""
+        if user is None:
+            user = get_current_user()
 
+        old_value = getattr(self, field_name)
+        if getattr(user, "can_view_real_employee_names", False):
+            setattr(self, field_name, new_value)
+        else:
+            if new_value != old_value:
+                setattr(self, field_name, new_value)
     @property
     def current_end_date(self):
         """Returns the end date of the current period of employment"""
@@ -47,7 +107,7 @@ class Employee(models.Model):
         return period.end_date if period else None
 
     class Meta:
-        ordering = ["last_name", "first_name"]
+        ordering = ["_last_name", "_first_name"]
 
 
 class EmploymentPeriod(models.Model):

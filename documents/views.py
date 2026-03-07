@@ -662,11 +662,18 @@ class ItemDeleteView(LoginRequiredMixin,View):
 # =============== LIST VIEWS ==========================
 # =====================================================
 
-class DWListView(LoginRequiredMixin,View):
+from django.db.models import Q, Prefetch
+from django.shortcuts import render
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from documents.models import IssueDocument, DocumentItem
+from core.models import Company
+
+class DWListView(LoginRequiredMixin, View):
     """List DW (IssueDocument) documents"""
 
     def get(self, request):
-        q = request.GET.get("q", "").strip()
+        q = request.GET.get("q", "").strip().lower()
         company_id = request.GET.get("company")
 
         qs = IssueDocument.objects.select_related(
@@ -675,20 +682,28 @@ class DWListView(LoginRequiredMixin,View):
             Prefetch("items", queryset=DocumentItem.objects.select_related("product"))
         )
 
-        if q:
-            qs = qs.filter(
-                Q(document_number__icontains=q)
-                | Q(employee__first_name__icontains=q)
-                | Q(employee__last_name__icontains=q)
-                | Q(employee__company__name__icontains=q)
-            )
-
         if company_id:
             qs = qs.filter(employee__company_id=company_id)
 
+        if q:
+            # Фільтруємо Python-ом по імені, прізвищу та компанії
+            filtered = []
+            for doc in qs:
+                if (
+                    q in (doc.document_number or "").lower()
+                    or q in doc.employee.first_name.lower()
+                    or q in doc.employee.last_name.lower()
+                    or q in (doc.employee.company.name or "").lower()
+                ):
+                    filtered.append(doc)
+            qs = filtered  # тепер qs — це list
+
+        # Сортування
+        qs = sorted(qs, key=lambda d: (d.issue_date, d.document_number), reverse=True)
+
         context = {
-            "documents": qs.order_by("-issue_date").order_by("-document_number"),
-            "q": q,
+            "documents": qs,
+            "q": request.GET.get("q", ""),
             "company": company_id,
             "companies": Company.objects.all().order_by("name"),
             "active": "documents_dw",

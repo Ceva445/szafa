@@ -11,3 +11,4 @@ data/
 staticfiles/
 szafa_env/
 *.xlsm
+*.xlsx

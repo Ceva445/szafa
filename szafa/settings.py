@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "reports",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "szafa.middleware.CurrentUserMiddleware",
 ]
 
 ROOT_URLCONF = "szafa.urls"
@@ -153,3 +155,5 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 CORS_ORIGIN_ALLOW_ALL = True
+AUTH_USER_MODEL = "accounts.User"
+FIELD_ENCRYPTION_KEY = os.environ["FIELD_ENCRYPTION_KEY"]
