@@ -872,19 +872,19 @@ class PendingReceiptDetailView(View):
                 invoice_raw = invoice_raws.filter(product__code=item.product.code).first()
                 # ifn invoice_raw is None than create receipt item without linking to invoice, otherwise link and update delivered quantity
                 if invoice_raw:
-                    # invoice_doc, _ = InvoiceDocument.objects.get_or_create(
-                    #     order_number=doc.order_number
-                    # )
+                    invoice_doc, _ = InvoiceDocument.objects.get_or_create(
+                        order_number=doc.order_number
+                    )
 
-                    # invoice_raw = InvoiceLineItem.objects.create(
-                    #     document=invoice_doc,  # ✅ poprawny typ
-                    #     product=item.product,
-                    #     quantity_ordered=0,
-                    #     quantity_delivered=qty,
-                    # )
-                    invoice_raw.quantity_delivered += qty
-                    invoice_raw.date_recieved = date.today()
-                    print(f"Updating invoice item {invoice_raw.pk}: new delivered qty = {invoice_raw.quantity_delivered} date_recieved = {invoice_raw.date_recieved}")
+                    invoice_raw = InvoiceLineItem.objects.create(
+                        document=invoice_doc,  # ✅ poprawny typ
+                        product=item.product,
+                        quantity_ordered=0,
+                        quantity_delivered=qty,
+                    )
+                invoice_raw.quantity_delivered += qty
+                invoice_raw.date_recieved = date.today()
+                print(f"Updating invoice item {invoice_raw.pk}: new delivered qty = {invoice_raw.quantity_delivered} date_recieved = {invoice_raw.date_recieved}")
                 invoice_items_to_update.append(invoice_raw)
                 print(f"len recipt items: {len(receipt_items)}, len invoice items to update: {len(invoice_items_to_update)}")
                 receipt_items.append(ReceiptItem(
