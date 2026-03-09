@@ -871,7 +871,7 @@ class PendingReceiptDetailView(View):
                 qty = item.quantity_delivered or 0
                 invoice_raw = invoice_raws.filter(product__code=item.product.code).first()
                 # ifn invoice_raw is None than create receipt item without linking to invoice, otherwise link and update delivered quantity
-                if invoice_raw:
+                if invoice_raw is None:
                     invoice_doc, _ = InvoiceDocument.objects.get_or_create(
                         order_number=doc.order_number
                     )
