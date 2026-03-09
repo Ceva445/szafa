@@ -858,6 +858,8 @@ class PendingReceiptDetailView(View):
                 supplier=doc.supplier,
                 recipient=doc.recipient,
                 issue_date=issue_date,
+                document_type="PZ",
+
             )
 
             receipt_items = []
