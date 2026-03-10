@@ -32,7 +32,7 @@ def update_stock_on_receipt(sender, instance, created, **kwargs):
 def update_stock_on_issue(sender, instance, created, **kwargs):
     """Updating the stock when creating a DW"""
     if created and instance.status == "active":
-        warehouse_stock = WarehouseStock.objects.filter(product=instance.product)[0]
+        warehouse_stock = WarehouseStock.objects.filter(product=instance.product, quantity__gt=0)[0]
         warehouse_stock.update_stock(-instance.quantity)
 
         # Record in the history of movements
